@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reserve · Craves &amp; Crumble</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <a class="logo" href="index.html"><img src="images/logo.png" alt="Craves &amp; Crumble"></a>
+    <div class="links">
+      <a href="#">Menu</a>
+      <a href="#">Hours &amp; locations</a>
+      <a href="#">Private events</a>
+    </div>
+    <span class="btn btn-primary current" aria-current="page">Reserve</span>
+  </nav>
+
+  <main class="booking">
+    <!-- Left column: photo + running summary -->
+    <aside>
+      <img src="images/photo-1-dining-room.png" alt="Dining room with bar stools and window tables">
+      <div class="summary">
+        <h3>Your booking so far</h3>
+        <ul id="summary"><li>Nothing chosen yet</li></ul>
+      </div>
+    </aside>
+
+    <!-- Right column: one scrolling page, steps F03 to F09 -->
+    <div>
+      <h1>Book a table</h1>
+
+      <!-- F03 Step 1 -->
+      <section class="step" id="step1">
+        <h2>1. When and how many</h2>
+        <div class="body">
+          <p>Location: <strong id="loc-label">Location 1</strong>
+            <select id="loc" aria-label="Change location">
+              <option>Location 1</option><option>Location 2</option>
+            </select>
+          </p>
+          <div class="field">
+            <span>Party size</span>
+            <div class="stepper">
+              <button type="button" class="btn" id="party-minus" aria-label="Fewer people">-</button>
+              <strong id="party" aria-live="polite">2</strong>
+              <button type="button" class="btn" id="party-plus" aria-label="More people">+</button>
+            </div>
+            <span class="help">Up to 8 online. For 9 or more, call us at 123-456-7890.</span>
+          </div>
+          <label class="field">Date <input type="date" id="date"></label>
+          <label class="field">Time
+            <select id="time"><option value="">Choose a time</option></select>
+          </label>
+          <button type="button" class="btn btn-primary" id="find" disabled>Find a table</button>
+          <span class="help" id="find-help">Choose a time to search</span>
+        </div>
+      </section>
+
+      <!-- F04 / F05 / F06 Step 2 -->
+      <section class="step locked" id="step2">
+        <h2>2. Time</h2>
+        <div class="body" hidden>
+          <p id="loading" hidden>Checking tables at <span class="loc-name"></span>...</p>
+          <!-- F04 times available -->
+          <div id="times-ok" hidden>
+            <div class="chips" id="chips"></div>
+            <button type="button" class="btn btn-primary" id="open-plan" disabled>Choose your table</button>
+          </div>
+          <!-- F05 time is full -->
+          <div id="times-full" class="notice" hidden>
+            <p id="full-msg"></p>
+            <div class="chips" id="near-chips"></div>
+            <button type="button" class="link-btn" data-go-date>See another day</button>
+          </div>
+          <!-- F06 no times that date -->
+          <div id="times-none" class="notice" hidden>
+            <p id="none-msg"></p>
+            <button type="button" class="btn btn-primary" id="try-next"></button>
+            <button type="button" class="link-btn" id="try-other-loc"></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 3: chosen in the F07 pop-up -->
+      <section class="step locked" id="step3">
+        <h2>3. Seating</h2>
+        <div class="body" hidden>
+          <p id="seat-text"></p>
+          <button type="button" class="link-btn" id="reopen-plan">Change table</button>
+        </div>
+      </section>
+
+      <!-- F08 Step 4 -->
+      <section class="step locked" id="step4">
+        <h2>4. Dietary needs</h2>
+        <div class="body" hidden>
+          <p>Optional, so the kitchen can prepare.</p>
+          <div class="chips" id="diet-chips">
+            <button type="button" class="chip" aria-pressed="false">Nut allergy</button>
+            <button type="button" class="chip" aria-pressed="false">Gluten-free</button>
+            <button type="button" class="chip" aria-pressed="false">Dairy-free</button>
+            <button type="button" class="chip" aria-pressed="false">Vegetarian</button>
+            <button type="button" class="chip" aria-pressed="false">Shellfish allergy</button>
+          </div>
+          <label class="field">Anything else?
+            <textarea id="notes" rows="3" placeholder="Celebrating a birthday, high chair needed"></textarea>
+          </label>
+          <button type="button" class="btn btn-primary" id="diet-continue">Continue</button>
+          <button type="button" class="link-btn" id="diet-skip">Skip this step</button>
+        </div>
+      </section>
+
+      <!-- F09 Step 5 -->
+      <section class="step locked" id="step5">
+        <h2>5. Review and contact</h2>
+        <div class="body" hidden>
+          <dl class="review-list" id="review"></dl>
+          <hr>
+          <h3>Who's the booking for?</h3>
+          <form id="contact" novalidate>
+            <label class="field">Full name <input id="name" autocomplete="name" required></label>
+            <label class="field" id="phone-field">Mobile number <input id="phone" type="tel" autocomplete="tel" placeholder="123-456-7890" required>
+              <span class="help" id="phone-error" hidden>Enter a 10-digit number, like 123-456-7890</span>
+            </label>
+            <label class="field">Email for confirmation (optional) <input id="email" type="email" autocomplete="email"></label>
+            <p class="help">Parties of 6 or more have a gratuity added.</p>
+            <button class="btn btn-primary">Confirm booking</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- F07 Seating and table (pop-up) -->
+  <dialog id="plan" aria-labelledby="plan-title">
+    <div class="dialog-head">
+      <div>
+        <h2 id="plan-title">Choose your table</h2>
+        <p id="plan-sub" class="help"></p>
+      </div>
+      <button type="button" class="link-btn" id="plan-close">Close</button>
+    </div>
+    <div class="chips" id="filter">
+      <button type="button" class="chip selected" data-filter="all">All</button>
+      <button type="button" class="chip" data-filter="Low">Low tables</button>
+      <button type="button" class="chip" data-filter="High">High-tops</button>
+    </div>
+    <div class="plan-wrap">
+      <div class="floor" id="floor">
+        <div class="fixture" style="left:0;top:0;width:100%;height:28px">Windows</div>
+        <div class="fixture" style="right:0;top:60px;width:60px;height:280px">Bar</div>
+        <div class="fixture" style="left:160px;bottom:0;width:200px;height:28px">Kitchen pass</div>
+        <div class="fixture" style="left:-2px;bottom:40px;width:8px;height:70px;background:var(--ivory)" title="Entrance"></div>
+        <span style="position:absolute;left:12px;bottom:80px;font-size:12px">Entrance</span>
+      </div>
+      <div>
+        <p id="table-desc">No table picked yet.</p>
+        <p><button type="button" class="btn btn-primary" id="book-table" disabled>Book this table</button></p>
+        <p><button type="button" class="link-btn" id="no-pref">No preference</button></p>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="js/common.js"></script>
+  <script src="js/booking.js"></script>
+</body>
+</html>

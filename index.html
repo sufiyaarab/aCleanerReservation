@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Craves &amp; Crumble</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- F01 Home -->
+  <nav class="nav">
+    <a class="logo" href="index.html"><img src="images/logo.png" alt="Craves &amp; Crumble"></a>
+    <div class="links">
+      <a href="#">Menu</a>
+      <a href="#">Hours &amp; locations</a>
+      <a href="#">Private events</a>
+    </div>
+    <button class="btn btn-primary" data-open-locations>Reserve</button>
+  </nav>
+
+  <main>
+    <section class="home-split">
+      <img src="images/photo-2-waffles.png" alt="Waffles with strawberries, whipped cream and maple syrup">
+      <div>
+        <h1>Brunch, every day 9 am to 1:30 pm</h1>
+        <p>Two locations, same waffles. Book a table for 1 to 8 people in under a minute.</p>
+        <button class="btn btn-primary" data-open-locations>Reserve a table</button>
+        <p class="help">Walk-ins welcome at the bar.</p>
+      </div>
+    </section>
+
+    <hr>
+    <div class="hours-row">
+      <div><strong>Location 1</strong><br>Today 9 am to 1:30 pm</div>
+      <div><strong>Location 2</strong><br>Today 9 am to 1:30 pm</div>
+    </div>
+
+    <p class="footer-line">Location 1 · Location 2 · 123-456-7890</p>
+  </main>
+
+  <!-- F02 Choose location (pop-up) -->
+  <dialog id="locations" aria-labelledby="loc-title">
+    <form method="dialog" id="loc-form">
+      <div class="dialog-head">
+        <h2 id="loc-title">Which location?</h2>
+        <button class="link-btn" value="cancel" formnovalidate>Close</button>
+      </div>
+      <label class="loc-option">
+        <input type="radio" name="loc" value="Location 1">
+        <span><strong>Location 1</strong><br>Today 9 am to 1:30 pm · Patio open</span>
+      </label>
+      <label class="loc-option">
+        <input type="radio" name="loc" value="Location 2">
+        <span><strong>Location 2</strong><br>Today 9 am to 1:30 pm · Step-free entrance</span>
+      </label>
+      <p><button type="button" class="btn btn-primary" id="loc-continue" disabled>Continue to booking</button></p>
+    </form>
+  </dialog>
+
+  <script src="js/common.js"></script>
+  <script>
+    const dlg = document.getElementById('locations');
+    const cont = document.getElementById('loc-continue');
+    document.querySelectorAll('[data-open-locations]').forEach(b => b.addEventListener('click', () => dlg.showModal()));
+    dlg.addEventListener('change', () => { cont.disabled = false; });
+    cont.addEventListener('click', () => {
+      const loc = dlg.querySelector('input[name=loc]:checked').value;
+      location.href = 'booking.html?loc=' + encodeURIComponent(loc);
+    });
+  </script>
+</body>
+</html>

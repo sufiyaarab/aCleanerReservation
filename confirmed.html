@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Booked · Craves &amp; Crumble</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- F10 Confirmed -->
+  <nav class="nav">
+    <a class="logo" href="index.html"><img src="images/logo.png" alt="Craves &amp; Crumble"></a>
+    <div class="links">
+      <a href="#">Menu</a>
+      <a href="#">Hours &amp; locations</a>
+      <a href="#">Private events</a>
+    </div>
+    <a class="btn btn-primary" href="index.html">Reserve</a>
+  </nav>
+
+  <main class="confirm">
+    <img src="images/photo-3-brunch-table.png" alt="Brunch table with poached eggs, grain bowls and coffee">
+    <div>
+      <h1 id="heading">Reservation confirmed</h1>
+      <p id="conf-line"></p>
+      <dl class="review-list" id="details"></dl>
+      <hr>
+      <button type="button" class="btn">Add to calendar</button>
+      <button type="button" class="btn" id="directions">Get directions</button>
+      <p class="help">Need to change it? Call 123-456-7890.</p>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const b = loadBooking() || {
+      // fallback sample so the page still shows something when opened directly
+      location: 'Location 1', party: 2, date: '2026-11-06', time: '11:00 am',
+      table: 'No preference', dietary: [], notes: '', name: 'Guest Name', phone: '123-456-7890'
+    };
+    const conf = String(Math.floor(100000 + Math.random() * 900000));
+    const date = new Date(b.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+    document.getElementById('heading').textContent = `Reservation confirmed, ${b.name}.`;
+    document.getElementById('conf-line').textContent = `Confirmation #${conf}. We've texted it to ${b.phone}.`;
+    document.getElementById('directions').textContent = `Get directions to ${b.location}`;
+    const rows = [
+      ['Location', b.location], ['Date', date], ['Time', b.time], ['Party size', b.party],
+      ['Seating', b.table], ['Dietary needs', [...b.dietary, b.notes].filter(Boolean).join(', ') || 'None'],
+    ];
+    document.getElementById('details').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd><span></span>`).join('');
+  </script>
+</body>
+</html>
