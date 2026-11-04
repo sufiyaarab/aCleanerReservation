@@ -1,0 +1,117 @@
+/* Craves & Crumble: rough base styles. Visual design still to come. */
+:root {
+  --ivory: #FAF6EE;   /* page background */
+  --maroon: #4A1418;  /* all text */
+  --burgundy: #7A1F2B;/* primary actions and selected states only */
+  --tan: #D8C3A5;     /* dividers, fills, unavailable. Never readable text */
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--maroon);
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+}
+h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; font-weight: normal; }
+a { color: var(--maroon); }
+img { max-width: 100%; display: block; }
+hr { border: 0; border-top: 1px solid var(--tan); margin: 24px 0; }
+
+/* Buttons */
+.btn {
+  font: inherit; cursor: pointer; border-radius: 4px; padding: 8px 16px;
+  border: 1px solid var(--maroon); background: transparent; color: var(--maroon);
+  text-decoration: none; display: inline-block;
+}
+.btn-primary { background: var(--burgundy); border-color: var(--burgundy); color: var(--ivory); }
+.btn:disabled { background: var(--tan); border-color: var(--tan); color: var(--maroon); opacity: .6; cursor: not-allowed; }
+.link-btn { font: inherit; background: none; border: 0; padding: 0; color: var(--maroon); text-decoration: underline; cursor: pointer; }
+
+/* Nav (all pages) */
+.nav {
+  display: flex; align-items: center; gap: 24px;
+  padding: 12px 32px; border-bottom: 1px solid var(--tan);
+  position: sticky; top: 0; background: var(--ivory); z-index: 10;
+}
+.nav .logo img { height: 40px; width: auto; }
+.nav .links { display: flex; gap: 16px; margin-left: auto; }
+.nav .current { font-weight: bold; }
+
+main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+/* F01 home */
+.home-split { display: grid; grid-template-columns: 3fr 2fr; gap: 32px; align-items: center; }
+.home-split img { width: 100%; height: 560px; object-fit: cover; }
+.hours-row { display: flex; gap: 24px; }
+.hours-row > div + div { border-left: 1px solid var(--tan); padding-left: 24px; }
+.footer-line { border-top: 1px solid var(--tan); margin-top: 32px; padding-top: 16px; }
+
+/* Pop-ups (F02, F07) */
+dialog { border: 1px solid var(--maroon); border-radius: 4px; background: var(--ivory); color: var(--maroon); padding: 24px; }
+dialog::backdrop { background: rgba(74, 20, 24, .45); }
+.dialog-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.loc-option { display: flex; gap: 12px; padding: 12px; border-bottom: 1px solid var(--tan); cursor: pointer; }
+.loc-option:has(input:checked) { border-left: 4px solid var(--burgundy); }
+
+/* F03-F09 booking page */
+.booking { display: grid; grid-template-columns: 1fr 2.3fr; gap: 40px; }
+.booking aside img { height: 360px; width: 100%; object-fit: cover; }
+.summary { position: sticky; top: 90px; }
+.step { border-top: 1px solid var(--tan); padding: 8px 0 16px; }
+.step.locked h2 { opacity: .6; }
+.step .body[hidden] { display: none; }
+.field { margin: 12px 0; display: flex; flex-direction: column; gap: 4px; max-width: 320px; }
+.field input, .field select, .field textarea { font: inherit; color: var(--maroon); padding: 6px 8px; border: 1px solid var(--maroon); border-radius: 4px; background: var(--ivory); }
+.field.error input { border-bottom: 3px solid var(--burgundy); }
+.stepper { display: flex; align-items: center; gap: 12px; }
+.help { font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.chip { font: inherit; padding: 6px 12px; border: 1px solid var(--maroon); border-radius: 4px; background: transparent; color: var(--maroon); cursor: pointer; }
+.chip.selected, .chip[aria-pressed="true"] { background: var(--burgundy); border-color: var(--burgundy); color: var(--ivory); }
+.chip:disabled { text-decoration: line-through; opacity: .4; cursor: not-allowed; }
+.notice { border-left: 4px solid var(--burgundy); padding-left: 12px; }
+.review-list { display: grid; grid-template-columns: max-content 1fr max-content; gap: 6px 24px; }
+.review-list dd { margin: 0; font-weight: bold; }
+
+/* F07 floor plan */
+.plan-wrap { display: flex; gap: 24px; }
+.floor { position: relative; width: 600px; height: 400px; border: 2px solid var(--maroon); flex: none; }
+.floor .fixture { position: absolute; background: var(--tan); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.table {
+  position: absolute; width: 56px; height: 56px; font: inherit; font-size: 12px; line-height: 1.2;
+  border: 1px solid var(--maroon); background: var(--ivory); color: var(--maroon); cursor: pointer;
+}
+.table.round { border-radius: 50%; }
+.table.taken { background: var(--tan); cursor: not-allowed; }
+.table.filtered { opacity: .25; }
+.table.selected { background: var(--burgundy); color: var(--ivory); }
+
+/* F10 confirmation */
+.confirm { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+
+/* Gordon placeholder bubble (Gordon itself comes later) */
+.gordon-bubble {
+  position: fixed; right: 24px; bottom: 24px; z-index: 20;
+  display: flex; align-items: center; gap: 8px; background: none; border: 0; cursor: pointer; font: inherit; color: var(--maroon);
+}
+.gordon-bubble img { width: 72px; height: 72px; border-radius: 50%; background: var(--tan); object-fit: cover; }
+.gordon-panel {
+  position: fixed; right: 24px; bottom: 108px; width: 300px; z-index: 20;
+  background: var(--ivory); border: 1px solid var(--maroon); border-radius: 4px; padding: 16px;
+}
+
+/* Phone width (M01): Reserve stays in the nav */
+@media (max-width: 760px) {
+  .nav { padding: 12px 16px; }
+  .nav .links a:not(.btn) { display: none; }
+  main { padding: 16px; }
+  .home-split, .booking, .confirm { grid-template-columns: 1fr; }
+  .home-split img { height: 280px; }
+  .booking aside img { display: none; }
+  .summary { position: static; }
+  .plan-wrap { flex-direction: column; }
+  .floor { transform: scale(.5); transform-origin: top left; margin-bottom: -200px; }
+  .gordon-bubble span { display: none; }
+}
