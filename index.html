@@ -23,7 +23,7 @@
       <img src="images/photo-2-waffles.png" alt="Waffles with strawberries, whipped cream and maple syrup">
       <div>
         <h1>Brunch, Tuesday to Sunday, 9 am to 1:30 pm</h1>
-        <p>Two locations, same waffles. Book a table for 1 to 10 people in under a minute.</p>
+        <p>Two locations, serving the same delicious waffles. Book a table for 1 to 8 people in under a minute.</p>
         <button class="btn btn-primary" data-open-locations>Reserve a table</button>
         <p class="help">Walk-ins welcome at the bar.</p>
       </div>
@@ -35,7 +35,7 @@
       <div><strong>Toronto</strong><br>890 Nonexistent Avenue, Toronto, ON M5V 2H1<br>(416) 555-0198<br>Tue to Sun 9 am to 1:30 pm, closed Mondays</div>
     </div>
 
-    <p class="footer-line">Groups of 11 or more: email groups@cravesandcrumble.com at least 48 hours ahead.<br>Oshawa (905) 555-0143 · Toronto (416) 555-0198</p>
+    <p class="footer-line">Groups of 9 or more: email groups@cravesandcrumble.com at least 48 hours ahead.<br>Oshawa (905) 555-0143 · Toronto (416) 555-0198</p>
   </main>
 
   <!-- F02 Choose location (pop-up) -->
@@ -63,8 +63,12 @@
     const cont = document.getElementById('loc-continue');
     document.querySelectorAll('[data-open-locations]').forEach(b => b.addEventListener('click', () => dlg.showModal()));
     dlg.addEventListener('change', () => { cont.disabled = false; });
+    // Pre-select the location chosen earlier this session (R-3)
+    const remembered = getLocation();
+    if (remembered) { dlg.querySelector(`input[value="${remembered}"]`).checked = true; cont.disabled = false; }
     cont.addEventListener('click', () => {
       const loc = dlg.querySelector('input[name=loc]:checked').value;
+      setLocation(loc);
       location.href = 'booking.html?loc=' + encodeURIComponent(loc);
     });
   </script>

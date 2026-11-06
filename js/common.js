@@ -30,15 +30,29 @@ const LOCATIONS = {
 // Policies (from the team's Reservation, Gratuity & Cancellation Policy).
 const POLICY = {
   hours: 'Tuesday to Sunday, 9 am to 1:30 pm. Closed Mondays.',
-  maxOnline: 10,
+  maxOnline: 8,
   groupsEmail: 'groups@cravesandcrumble.com',
   cancelHours: 4,
   graceMinutes: 15,
 };
 function gratuityNote(party) {
-  if (party >= 10) return 'A 20% gratuity is added for parties of 10 or more.';
   if (party >= 6) return 'An 18% gratuity is added for parties of 6 or more.';
   return 'Gratuity is at your discretion.';
+}
+
+// Escape text the guest typed before putting it into HTML.
+function esc(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// The chosen location is remembered for the session (R-3).
+function getLocation() {
+  let loc = null;
+  try { loc = sessionStorage.getItem('location'); } catch (e) {}
+  return LOCATIONS[loc] ? loc : null;
+}
+function setLocation(loc) {
+  try { sessionStorage.setItem('location', loc); } catch (e) {}
 }
 
 // Small helper to share the booking between pages.

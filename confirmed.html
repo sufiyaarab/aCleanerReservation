@@ -34,11 +34,13 @@
 
   <script src="js/common.js"></script>
   <script>
-    const b = loadBooking() || {
+    const sample = {
       // fallback sample so the page still shows something when opened directly
       location: 'Oshawa', party: 2, date: '2026-11-06', time: '11:00 am',
       table: 'No preference', dietary: [], notes: '', name: 'Guest Name', phone: '905-555-0100'
     };
+    let b = loadBooking();
+    if (!b || !LOCATIONS[b.location]) b = sample;
     const conf = String(Math.floor(100000 + Math.random() * 900000));
     const date = new Date(b.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
     document.getElementById('heading').textContent = `Reservation confirmed, ${b.name}.`;
@@ -50,7 +52,7 @@
       ['Location', `${b.location}, ${LOCATIONS[b.location].address}`], ['Date', date], ['Time', b.time], ['Party size', b.party],
       ['Seating', b.table], ['Dietary needs', [...b.dietary, b.notes].filter(Boolean).join(', ') || 'None'],
     ];
-    document.getElementById('details').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd><span></span>`).join('');
+    document.getElementById('details').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd><span></span>`).join('');
   </script>
 </body>
 </html>
