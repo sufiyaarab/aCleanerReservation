@@ -27,52 +27,53 @@
       </div>
     </aside>
 
-    <!-- Right column: one scrolling page, steps F03 to F09 -->
+    <!-- Right column: one scrolling page, steps F03 to F09.
+         Finished steps fold into one line with an Edit link; later steps stay greyed until reached. -->
     <div>
       <h1>Book a table</h1>
 
-      <!-- F03 Step 1 -->
-      <section class="step" id="step1">
-        <h2>1. When and how many</h2>
+      <!-- F03 Step 1: party size, date, time (R-1 order) -->
+      <section class="step" id="step1" data-step="1">
+        <div class="step-head"><h2>1. When and how many</h2><p class="done-line"></p><button type="button" class="link-btn edit">Edit</button></div>
         <div class="body">
-          <p>Location: <strong id="loc-label">Location 1</strong>
-            <select id="loc" aria-label="Change location">
-              <option>Location 1</option><option>Location 2</option>
-            </select>
-          </p>
-          <div class="field">
-            <span>Party size</span>
-            <div class="stepper">
-              <button type="button" class="btn" id="party-minus" aria-label="Fewer people">-</button>
-              <strong id="party" aria-live="polite">2</strong>
-              <button type="button" class="btn" id="party-plus" aria-label="More people">+</button>
+          <div class="field-row">
+            <label class="field">Location
+              <select id="loc"><option>Oshawa</option><option>Toronto</option></select>
+            </label>
+            <div class="field">
+              <span id="party-label">Party size</span>
+              <div class="stepper" role="group" aria-labelledby="party-label">
+                <button type="button" class="btn" id="party-minus" aria-label="Fewer people">-</button>
+                <strong id="party" aria-live="polite">2</strong>
+                <button type="button" class="btn" id="party-plus" aria-label="More people">+</button>
+              </div>
             </div>
-            <span class="help">Up to 8 online. For 9 or more, call us at 123-456-7890.</span>
+            <label class="field">Date <input type="date" id="date"></label>
+            <label class="field">Time <select id="time"></select></label>
           </div>
-          <label class="field">Date <input type="date" id="date"></label>
-          <label class="field">Time
-            <select id="time"><option value="">Choose a time</option></select>
-          </label>
-          <button type="button" class="btn btn-primary" id="find" disabled>Find a table</button>
-          <span class="help" id="find-help">Choose a time to search</span>
+          <p class="help">Open Tuesday to Sunday, 9 am to 1:30 pm. Closed Mondays.<br>
+            Book 1 to 8 guests online. For 9 or more, email <a href="mailto:groups@cravesandcrumble.com">groups@cravesandcrumble.com</a> at least 48 hours ahead.</p>
+          <button type="button" class="btn btn-primary" id="find">Find a table</button>
+          <p class="help status" id="find-status" aria-live="polite"></p>
         </div>
       </section>
 
       <!-- F04 / F05 / F06 Step 2 -->
-      <section class="step locked" id="step2">
-        <h2>2. Time</h2>
-        <div class="body" hidden>
+      <section class="step" id="step2" data-step="2">
+        <div class="step-head"><h2>2. Time</h2><p class="done-line"></p><button type="button" class="link-btn edit">Edit</button></div>
+        <div class="body">
           <p id="loading" hidden>Checking tables at <span class="loc-name"></span>...</p>
           <!-- F04 times available -->
           <div id="times-ok" hidden>
+            <p class="help">Crossed-out times are booked.</p>
             <div class="chips" id="chips"></div>
-            <button type="button" class="btn btn-primary" id="open-plan" disabled>Choose your table</button>
+            <button type="button" class="btn btn-primary" id="open-plan">Choose your table</button>
           </div>
           <!-- F05 time is full -->
           <div id="times-full" class="notice" hidden>
             <p id="full-msg"></p>
             <div class="chips" id="near-chips"></div>
-            <button type="button" class="link-btn" data-go-date>See another day</button>
+            <button type="button" class="link-btn" id="see-other-day">See another day</button>
           </div>
           <!-- F06 no times that date -->
           <div id="times-none" class="notice" hidden>
@@ -84,18 +85,17 @@
       </section>
 
       <!-- Step 3: chosen in the F07 pop-up -->
-      <section class="step locked" id="step3">
-        <h2>3. Seating</h2>
-        <div class="body" hidden>
-          <p id="seat-text"></p>
-          <button type="button" class="link-btn" id="reopen-plan">Change table</button>
+      <section class="step" id="step3" data-step="3">
+        <div class="step-head"><h2>3. Seating</h2><p class="done-line"></p><button type="button" class="link-btn edit">Edit</button></div>
+        <div class="body">
+          <button type="button" class="btn btn-primary" id="reopen-plan">Choose your table</button>
         </div>
       </section>
 
       <!-- F08 Step 4 -->
-      <section class="step locked" id="step4">
-        <h2>4. Dietary needs</h2>
-        <div class="body" hidden>
+      <section class="step" id="step4" data-step="4">
+        <div class="step-head"><h2>4. Dietary needs</h2><p class="done-line"></p><button type="button" class="link-btn edit">Edit</button></div>
+        <div class="body">
           <p>Optional, so the kitchen can prepare.</p>
           <div class="chips" id="diet-chips">
             <button type="button" class="chip" aria-pressed="false">Nut allergy</button>
@@ -113,19 +113,21 @@
       </section>
 
       <!-- F09 Step 5 -->
-      <section class="step locked" id="step5">
-        <h2>5. Review and contact</h2>
-        <div class="body" hidden>
+      <section class="step" id="step5" data-step="5">
+        <div class="step-head"><h2>5. Review and contact</h2></div>
+        <div class="body">
           <dl class="review-list" id="review"></dl>
           <hr>
           <h3>Who's the booking for?</h3>
           <form id="contact" novalidate>
-            <label class="field">Full name <input id="name" autocomplete="name" required></label>
-            <label class="field" id="phone-field">Mobile number <input id="phone" type="tel" autocomplete="tel" placeholder="123-456-7890" required>
-              <span class="help" id="phone-error" hidden>Enter a 10-digit number, like 123-456-7890</span>
+            <label class="field" id="name-field">Full name <input id="name" autocomplete="name" required>
+              <span class="help" id="name-error" hidden>Enter the name for the booking</span>
+            </label>
+            <label class="field" id="phone-field">Mobile number <input id="phone" type="tel" autocomplete="tel" placeholder="905-555-0100" required>
+              <span class="help" id="phone-error" hidden>Enter a 10-digit number, like 905-555-0100</span>
             </label>
             <label class="field">Email for confirmation (optional) <input id="email" type="email" autocomplete="email"></label>
-            <p class="help">Parties of 6 or more have a gratuity added.</p>
+            <p class="help" id="grat-note"></p>
             <button class="btn btn-primary">Confirm booking</button>
           </form>
         </div>
@@ -156,7 +158,7 @@
         <span style="position:absolute;left:12px;bottom:80px;font-size:12px">Entrance</span>
       </div>
       <div>
-        <p id="table-desc">No table picked yet.</p>
+        <p id="table-desc" aria-live="polite">No table picked yet.</p>
         <p><button type="button" class="btn btn-primary" id="book-table" disabled>Book this table</button></p>
         <p><button type="button" class="link-btn" id="no-pref">No preference</button></p>
       </div>

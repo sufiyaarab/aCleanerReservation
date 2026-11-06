@@ -1,20 +1,27 @@
 // Booking page logic (frames F03 to F09). Availability is FAKE demo data, no backend.
-//   - Mondays are fully booked, so picking a Monday shows F06.
-//   - Two time slots per date/location are "taken". Pick one as your time to see F05.
+//   - Closed Mondays (can't search).
+//   - Fully booked (F06): any date whose day number is a multiple of 7 (Nov 7, 14, 21, 28).
+//   - Two times per date and location are taken. Pick one in step 1 to see F05.
+//   - Today's times that have already passed can't be picked.
 
 const $ = (id) => document.getElementById(id);
 
+// ---------- state ----------
+const urlLoc = new URLSearchParams(location.search).get('loc');
 const booking = {
-  location: new URLSearchParams(location.search).get('loc') || 'Location 1',
+  location: LOCATIONS[urlLoc] ? urlLoc : (getLocation() || 'Oshawa'),
   party: 2,
   date: '',
   time: '',
-  table: null,      // e.g. "Table 6, low table by the windows" or "No preference"
+  table: '',        // e.g. "Table 6, low table by the windows, seats 1 to 2" or "No preference"
   dietary: [],
   notes: '',
 };
+setLocation(booking.location);
+let current = 1;        // the open step
+let dietDone = false;   // step 4 finished at least once
 
-// ---------- helpers ----------
+// ---------- dates and times ----------
 const TIMES = ['9:00 am', '9:30 am', '10:00 am', '10:30 am', '11:00 am', '11:30 am',
                '12:00 pm', '12:30 pm', '1:00 pm', '1:30 pm'];
 
@@ -24,70 +31,147 @@ function todayISO() {
   return d.toISOString().slice(0, 10);
 }
 function prettyDate(iso) {
-  const d = new Date(iso + 'T12:00:00');
-  return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+  return new Date(iso + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 function addDays(iso, n) {
   const d = new Date(iso + 'T12:00:00');
   d.setDate(d.getDate() + n);
   return d.toISOString().slice(0, 10);
 }
+function minutesOf(t) { // "1:30 pm" -> 810
+  const [, h, m, ap] = t.match(/(\d+):(\d+) (am|pm)/);
+  return (Number(h) % 12 + (ap === 'pm' ? 12 : 0)) * 60 + Number(m);
+}
 function hash(str) {
   let h = 0;
   for (const c of str) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return h;
 }
-function isFullyBooked(iso) { return new Date(iso + 'T12:00:00').getDay() === 1; } // Mondays
+const isClosed = (iso) => new Date(iso + 'T12:00:00').getDay() === 1;      // Mondays
+const isFullyBooked = (iso) => Number(iso.slice(8, 10)) % 7 === 0;         // FAKE, demos F06
+function isPast(iso, t) {
+  if (iso < todayISO()) return true;
+  if (iso > todayISO()) return false;
+  const now = new Date();
+  return minutesOf(t) <= now.getHours() * 60 + now.getMinutes();
+}
+const openTimes = (iso) => TIMES.filter(t => !isPast(iso, t));
+function nextOpenDay(iso) {
+  let d = addDays(iso, 1);
+  while (isClosed(d) || isFullyBooked(d) || !openTimes(d).length) d = addDays(d, 1);
+  return d;
+}
 function takenTimes(iso, loc) {
   const h = hash(iso + loc);
   return [TIMES[h % TIMES.length], TIMES[(h >> 4) % TIMES.length]];
 }
 
-function unlock(stepId) {
-  const s = $(stepId);
-  s.classList.remove('locked');
-  s.querySelector('.body').hidden = false;
-  s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+// ---------- steps: done (folded to one line), open, locked ----------
+function stepLine(n) {
+  if (n === 1) return `${booking.location} · Party of ${booking.party} · ${prettyDate(booking.date)}`;
+  if (n === 2) return booking.time;
+  if (n === 3) return booking.table;
+  if (n === 4) return [...booking.dietary, booking.notes].filter(Boolean).join(', ') || 'None';
+  return '';
 }
+function goTo(n, scroll = true) {
+  current = n;
+  document.querySelectorAll('.step').forEach(sec => {
+    const i = Number(sec.dataset.step);
+    sec.classList.toggle('done', i < n);
+    sec.classList.toggle('locked', i > n);
+    sec.querySelector('.done-line') && (sec.querySelector('.done-line').textContent = i < n ? stepLine(i) : '');
+  });
+  if (n === 5) renderReview();
+  renderSummary();
+  if (scroll) $('step' + n).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+// Edit links on folded steps
+document.querySelectorAll('.step .edit').forEach(btn => btn.addEventListener('click', () => {
+  const n = Number(btn.closest('.step').dataset.step);
+  if (n === 3) return openPlan();
+  goTo(n);
+}));
+// After an edit, go back to where the guest was
+const resume = () => goTo(!booking.table ? 3 : dietDone ? 5 : 4);
 
 function renderSummary() {
-  const items = [];
-  items.push(booking.location);
-  items.push('Party of ' + booking.party);
+  const items = [booking.location, 'Party of ' + booking.party];
   if (booking.date) items.push(prettyDate(booking.date));
   if (booking.time) items.push(booking.time);
   if (booking.table) items.push(booking.table);
-  if (booking.dietary.length) items.push(booking.dietary.join(', '));
-  $('summary').innerHTML = items.map(i => '<li>' + i + '</li>').join('');
-  $('loc-label').textContent = booking.location;
+  if (booking.dietary.length || booking.notes) items.push(stepLine(4));
+  $('summary').innerHTML = items.map(i => '<li>' + esc(i) + '</li>').join('');
   document.querySelectorAll('.loc-name').forEach(e => e.textContent = booking.location);
+  $('grat-note').textContent = gratuityNote(booking.party);
 }
 
 // ---------- F03 step 1 ----------
 $('loc').value = booking.location;
-$('date').min = todayISO();          // past dates disabled
-$('date').value = todayISO();        // default today
-booking.date = todayISO();
-TIMES.forEach(t => $('time').add(new Option(t, t)));
+$('date').min = todayISO(); // past dates can't be picked
+booking.date = (!isClosed(todayISO()) && openTimes(todayISO()).length) ? todayISO() : nextOpenDay(todayISO());
+$('date').value = booking.date;
 
-function updateFind() {
-  $('find').disabled = !$('time').value;
-  $('find-help').hidden = !!$('time').value;
+function fillTimes() {
+  const keep = $('time').value;
+  $('time').innerHTML = '<option value="">Choose a time</option>';
+  TIMES.forEach(t => {
+    const o = new Option(t, t);
+    o.disabled = isPast(booking.date, t);   // passed times can't be picked
+    $('time').add(o);
+  });
+  $('time').value = (keep && !isPast(booking.date, keep)) ? keep : '';
 }
-$('loc').addEventListener('change', e => { booking.location = e.target.value; renderSummary(); });
-$('date').addEventListener('change', e => { booking.date = e.target.value; renderSummary(); });
-$('time').addEventListener('change', updateFind);
-$('party-minus').addEventListener('click', () => { if (booking.party > 1) booking.party--; $('party').textContent = booking.party; renderSummary(); });
-$('party-plus').addEventListener('click', () => { if (booking.party < 8) booking.party++; $('party').textContent = booking.party; renderSummary(); });
 
-$('find').addEventListener('click', search);
+// Explains why Find a table can't run yet, or returns '' when it can
+function step1Problem() {
+  if (!booking.date) return 'Choose a date.';
+  if (booking.date < todayISO()) return 'That date has passed. Choose today or later.';
+  if (isClosed(booking.date)) return "We're closed on Mondays. Choose Tuesday to Sunday.";
+  if (!openTimes(booking.date).length) return "Today's brunch times have all passed. Choose another date.";
+  if (!$('time').value) return 'Choose a time to search.';
+  return '';
+}
+function updateFind() {
+  const problem = step1Problem();
+  $('find').disabled = !!problem;
+  $('find-status').textContent = problem;
+}
+// Changing step 1 after a search clears the old results
+function step1Changed() {
+  booking.time = '';
+  booking.table = '';
+  if (current > 1) goTo(1, false);
+  fillTimes();
+  updateFind();
+  renderSummary();
+}
+$('loc').addEventListener('change', e => { booking.location = e.target.value; setLocation(booking.location); step1Changed(); });
+$('date').addEventListener('change', e => { booking.date = e.target.value; step1Changed(); });
+$('date').addEventListener('input', e => { booking.date = e.target.value; updateFind(); });
+$('time').addEventListener('change', () => { booking.time = ''; booking.table = ''; updateFind(); });
+$('party-minus').addEventListener('click', () => setParty(booking.party - 1));
+$('party-plus').addEventListener('click', () => setParty(booking.party + 1));
+function setParty(n) {
+  booking.party = Math.min(POLICY.maxOnline, Math.max(1, n));
+  $('party').textContent = booking.party;
+  $('party-minus').disabled = booking.party === 1;
+  $('party-plus').disabled = booking.party === POLICY.maxOnline;
+  // a table that no longer fits the party is cleared
+  const t = TABLES.find(t => describe(t) === booking.table);
+  if (t && !fits(t)) booking.table = '';
+  renderSummary();
+}
+$('find').addEventListener('click', () => { if (!step1Problem()) search(); });
 
 // ---------- F04 / F05 / F06 step 2 ----------
 function search() {
-  unlock('step2');
+  booking.time = '';
+  booking.table = '';
+  goTo(2);
   ['times-ok', 'times-full', 'times-none'].forEach(id => $(id).hidden = true);
   $('loading').hidden = false;
-  setTimeout(showResults, 600); // pretend to check
+  setTimeout(showResults, 500); // pretend to check
 }
 
 function showResults() {
@@ -96,106 +180,126 @@ function showResults() {
 
   // F06: nothing free that day
   if (isFullyBooked(booking.date)) {
-    let next = addDays(booking.date, 1);
-    while (isFullyBooked(next)) next = addDays(next, 1);
+    const next = nextOpenDay(booking.date);
+    const other = booking.location === 'Oshawa' ? 'Toronto' : 'Oshawa';
     $('none-msg').textContent = `We're fully booked at ${booking.location} on ${prettyDate(booking.date)}.`;
     $('try-next').textContent = 'Try ' + prettyDate(next);
-    $('try-next').onclick = () => { $('date').value = booking.date = next; renderSummary(); search(); };
-    const other = booking.location === 'Location 1' ? 'Location 2' : 'Location 1';
+    $('try-next').onclick = () => { booking.date = $('date').value = next; fillTimes(); if (!$('time').value) { goTo(1); updateFind(); } else search(); };
     $('try-other-loc').textContent = `Check ${other} instead`;
-    $('try-other-loc').onclick = () => { $('loc').value = booking.location = other; renderSummary(); search(); };
+    $('try-other-loc').onclick = () => { booking.location = $('loc').value = other; setLocation(other); goTo(1); updateFind(); };
     $('times-none').hidden = false;
     return;
   }
 
   const taken = takenTimes(booking.date, booking.location);
+  const free = (t) => !taken.includes(t) && !isPast(booking.date, t);
 
-  // F05: the chosen time is full, offer nearest earlier and later
-  if (taken.includes(wanted)) {
+  // F05: the chosen time is full. Offer nearest earlier and later,
+  // or the two nearest on the other side if one side has none (R-16).
+  if (!free(wanted)) {
     const i = TIMES.indexOf(wanted);
-    const earlier = TIMES.slice(0, i).reverse().find(t => !taken.includes(t));
-    const later = TIMES.slice(i + 1).find(t => !taken.includes(t));
-    $('full-msg').textContent = `${wanted} is full. The closest times are:`;
+    const before = TIMES.slice(0, i).reverse().filter(free);
+    const after = TIMES.slice(i + 1).filter(free);
+    let offers = [before[0], after[0]].filter(Boolean);
+    if (!before.length) offers = after.slice(0, 2);
+    if (!after.length) offers = before.slice(0, 2).reverse();
+    $('full-msg').textContent = offers.length
+      ? `${wanted} is fully booked. The closest times are:`
+      : `${wanted} is fully booked and there are no other times that day.`;
     $('near-chips').innerHTML = '';
-    [earlier, later].filter(Boolean).forEach(t => {
+    offers.forEach(t => {
       const b = document.createElement('button');
-      b.className = 'chip'; b.textContent = t;
-      b.onclick = () => { $('time').value = t; pickTime(t); showChips(taken); };
+      b.type = 'button'; b.className = 'chip'; b.textContent = t;
+      b.onclick = () => { $('time').value = t; pickTime(t); showChips(free); };
       $('near-chips').append(b);
     });
     $('times-full').hidden = false;
     return;
   }
 
-  // F04: times available, the wanted one pre-selected
+  // F04: times shown, the wanted one selected
   pickTime(wanted);
-  showChips(taken);
+  showChips(free);
 }
 
-function showChips(taken) {
+function showChips(free) {
   $('times-full').hidden = true;
   $('chips').innerHTML = '';
   TIMES.forEach(t => {
     const b = document.createElement('button');
+    b.type = 'button';
     b.className = 'chip' + (t === booking.time ? ' selected' : '');
     b.textContent = t;
-    b.disabled = taken.includes(t);
-    b.onclick = () => { pickTime(t); showChips(taken); };
+    b.disabled = !free(t);
+    b.setAttribute('aria-pressed', t === booking.time);
+    b.onclick = () => { $('time').value = t; pickTime(t); showChips(free); };
     $('chips').append(b);
   });
   $('times-ok').hidden = false;
 }
-
 function pickTime(t) {
+  if (t !== booking.time) booking.table = ''; // a different time needs its table checked again
   booking.time = t;
-  $('open-plan').disabled = false;
   renderSummary();
 }
-document.querySelector('[data-go-date]').addEventListener('click', () => { $('step1').scrollIntoView({ behavior: 'smooth' }); $('date').focus(); });
+$('see-other-day').addEventListener('click', () => { goTo(1); $('date').focus(); });
 
 // ---------- F07 seating and table (pop-up) ----------
 const TABLES = [
-  // n, height, shape, x, y, seats, where
-  [1, 'Low', 'round', 40, 50, '2', 'by the windows'],
-  [2, 'Low', 'round', 140, 50, '2', 'by the windows'],
-  [3, 'Low', 'square', 240, 50, '2 to 4', 'by the windows'],
-  [4, 'Low', 'square', 340, 50, '2 to 4', 'by the windows'],
-  [5, 'High', 'round', 460, 70, '2', 'at the bar'],
-  [6, 'High', 'round', 460, 160, '2', 'at the bar'],
-  [7, 'High', 'round', 460, 250, '2', 'at the bar'],
-  [8, 'Low', 'square', 60, 160, '4', 'in the middle'],
-  [9, 'Low', 'square', 170, 160, '4', 'in the middle'],
-  [10, 'Low', 'square', 280, 160, '4 to 6', 'in the middle'],
-  [11, 'High', 'square', 370, 160, '4', 'near the bar'],
-  [12, 'Low', 'round', 100, 260, '2', 'by the entrance'],
-  [13, 'Low', 'square', 220, 260, '4 to 6', 'near the kitchen'],
-  [14, 'High', 'square', 330, 260, '4', 'near the kitchen'],
+  // n, height, shape, x, y, minSeats, maxSeats, where, width (default 56)
+  [1, 'Low', 'round', 40, 50, 1, 2, 'by the windows'],
+  [2, 'Low', 'round', 140, 50, 1, 2, 'by the windows'],
+  [3, 'Low', 'square', 240, 50, 2, 4, 'by the windows'],
+  [4, 'Low', 'square', 340, 50, 2, 4, 'by the windows'],
+  [5, 'High', 'round', 460, 70, 1, 2, 'at the bar'],
+  [6, 'High', 'round', 460, 160, 1, 2, 'at the bar'],
+  [7, 'High', 'round', 460, 250, 1, 2, 'at the bar'],
+  [8, 'Low', 'square', 40, 160, 2, 4, 'in the middle'],
+  [9, 'Low', 'square', 140, 160, 2, 4, 'in the middle'],
+  [10, 'Low', 'square', 240, 160, 3, 6, 'in the middle', 80],
+  [11, 'High', 'square', 350, 160, 2, 4, 'near the bar'],
+  [12, 'Low', 'round', 100, 260, 1, 2, 'by the entrance'],
+  [13, 'Low', 'square', 200, 260, 3, 6, 'near the kitchen', 80],
+  [14, 'High', 'square', 320, 260, 3, 6, 'near the kitchen', 80],
+  [15, 'Low', 'square', 380, 336, 5, 8, 'by the kitchen, long', 140],
 ];
 let picked = null;
 let filter = 'all';
+const fits = (t) => booking.party >= t[5] && booking.party <= t[6];
+const describe = (t) => `Table ${t[0]}, ${t[1] === 'High' ? 'high-top' : 'low table'} ${t[7]}, seats ${t[5]} to ${t[6]}`;
+const takenTables = () => new Set([hash(booking.date + booking.time) % 15 + 1, (hash(booking.time) >> 3) % 15 + 1]);
 
 function renderPlan() {
-  const takenSet = new Set([hash(booking.date + booking.time) % 14 + 1, (hash(booking.time) >> 3) % 14 + 1]);
+  const takenSet = takenTables();
+  const cur = TABLES.find(t => t[0] === picked);
+  if (cur && (!fits(cur) || takenSet.has(cur[0]))) picked = null;
   $('floor').querySelectorAll('.table').forEach(e => e.remove());
-  TABLES.forEach(([n, h, shape, x, y]) => {
+  TABLES.forEach(t => {
+    const [n, h, shape, x, y, min, max, , w = 56] = t;
     const b = document.createElement('button');
+    b.type = 'button';
     const isTaken = takenSet.has(n);
-    b.className = `table ${shape === 'round' ? 'round' : ''} ${isTaken ? 'taken' : ''} ${picked === n ? 'selected' : ''} ${filter !== 'all' && filter !== h ? 'filtered' : ''}`;
-    b.style.left = x + 'px'; b.style.top = y + 'px';
-    b.innerHTML = `${n}<br>${isTaken ? 'Taken' : h}`;
-    b.disabled = isTaken || (filter !== 'all' && filter !== h);
-    b.setAttribute('aria-label', `Table ${n}, ${h === 'High' ? 'high-top' : 'low table'}${isTaken ? ', taken' : ''}`);
+    const tooSmall = booking.party > max, tooBig = booking.party < min;
+    const off = (filter !== 'all' && filter !== h) || tooSmall || tooBig;
+    b.className = `table ${shape === 'round' ? 'round' : ''} ${isTaken ? 'taken' : ''} ${picked === n ? 'selected' : ''} ${off ? 'filtered' : ''}`;
+    b.style.left = x + 'px'; b.style.top = y + 'px'; b.style.width = w + 'px';
+    b.innerHTML = `${n} ${h}<br>${isTaken ? 'Taken' : min + '-' + max}`;
+    b.disabled = isTaken || off;
+    const why = isTaken ? ', taken' : tooSmall ? ', too small for your party' : tooBig ? ', too big for your party' : '';
+    b.setAttribute('aria-label', describe(t) + why);
+    b.title = describe(t) + why;
     b.onclick = () => { picked = n; renderPlan(); };
     $('floor').append(b);
   });
   const t = TABLES.find(t => t[0] === picked);
-  $('table-desc').textContent = t ? `Table ${t[0]}, ${t[1] === 'High' ? 'high-top' : 'low table'} ${t[6]}, seats ${t[5]}` : 'No table picked yet.';
+  $('table-desc').textContent = t ? describe(t) : `No table picked yet. Faded tables don't fit a party of ${booking.party}.`;
   $('book-table').disabled = !t;
   $('book-table').textContent = t ? `Book table ${t[0]}` : 'Book this table';
   $('no-pref').textContent = filter === 'all' ? 'No preference' : `No preference, any ${filter === 'High' ? 'high-top' : 'low table'}`;
 }
 
 function openPlan() {
+  if (!booking.time) return goTo(2); // needs a time first
   $('plan-sub').textContent = `${prettyDate(booking.date)}, ${booking.time}, party of ${booking.party}, ${booking.location}`;
   renderPlan();
   $('plan').showModal();
@@ -203,12 +307,9 @@ function openPlan() {
 function chooseTable(text) {
   booking.table = text;
   $('plan').close();
-  $('seat-text').textContent = text;
-  renderSummary();
-  unlock('step3');
-  unlock('step4');
+  resume();
 }
-$('open-plan').addEventListener('click', openPlan);
+$('open-plan').addEventListener('click', () => { if (booking.time) { goTo(3, false); openPlan(); } });
 $('reopen-plan').addEventListener('click', openPlan);
 $('plan-close').addEventListener('click', () => $('plan').close());
 $('filter').addEventListener('click', e => {
@@ -219,7 +320,7 @@ $('filter').addEventListener('click', e => {
   if (t && filter !== 'all' && t[1] !== filter) picked = null;
   renderPlan();
 });
-$('book-table').addEventListener('click', () => chooseTable($('table-desc').textContent));
+$('book-table').addEventListener('click', () => chooseTable(describe(TABLES.find(t => t[0] === picked))));
 $('no-pref').addEventListener('click', () => chooseTable($('no-pref').textContent));
 
 // ---------- F08 dietary needs ----------
@@ -228,11 +329,14 @@ $('diet-chips').addEventListener('click', e => {
   e.target.setAttribute('aria-pressed', e.target.getAttribute('aria-pressed') !== 'true');
 });
 function finishDiet(skip) {
-  booking.dietary = skip ? [] : [...$('diet-chips').querySelectorAll('[aria-pressed="true"]')].map(c => c.textContent);
-  booking.notes = skip ? '' : $('notes').value.trim();
-  renderSummary();
-  renderReview();
-  unlock('step5');
+  if (skip) {
+    $('diet-chips').querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', 'false'));
+    $('notes').value = '';
+  }
+  booking.dietary = [...$('diet-chips').querySelectorAll('[aria-pressed="true"]')].map(c => c.textContent);
+  booking.notes = $('notes').value.trim();
+  dietDone = true;
+  goTo(5);
 }
 $('diet-continue').addEventListener('click', () => finishDiet(false));
 $('diet-skip').addEventListener('click', () => finishDiet(true));
@@ -240,35 +344,40 @@ $('diet-skip').addEventListener('click', () => finishDiet(true));
 // ---------- F09 review and contact ----------
 function renderReview() {
   const rows = [
-    ['Location', booking.location, 'step1'],
-    ['Date', prettyDate(booking.date), 'step1'],
-    ['Time', booking.time, 'step2'],
-    ['Party size', booking.party, 'step1'],
-    ['Seating', booking.table, 'step3'],
-    ['Dietary needs', [...booking.dietary, booking.notes].filter(Boolean).join(', ') || 'None', 'step4'],
+    ['Location', `${booking.location}, ${LOCATIONS[booking.location].address}`, 1],
+    ['Date', prettyDate(booking.date), 1],
+    ['Party size', booking.party, 1],
+    ['Time', booking.time, 2],
+    ['Seating', booking.table, 3],
+    ['Dietary needs', stepLine(4), 4],
   ];
   $('review').innerHTML = rows.map(([k, v, step]) =>
-    `<dt>${k}</dt><dd>${v}</dd><button type="button" class="link-btn" data-edit="${step}">Edit</button>`).join('');
+    `<dt>${k}</dt><dd>${esc(v)}</dd><button type="button" class="link-btn" data-edit="${step}">Edit</button>`).join('');
 }
 $('review').addEventListener('click', e => {
-  const step = e.target.dataset.edit;
+  const step = Number(e.target.dataset.edit);
   if (!step) return;
-  if (step === 'step3') return openPlan();
-  $(step).scrollIntoView({ behavior: 'smooth' });
+  if (step === 3) return openPlan();
+  goTo(step);
 });
 
 $('contact').addEventListener('submit', e => {
   e.preventDefault();
-  const digits = $('phone').value.replace(/\D/g, '');
-  const phoneOk = digits.length === 10;
+  const nameOk = !!$('name').value.trim();
+  const phoneOk = $('phone').value.replace(/\D/g, '').length === 10;
+  $('name-field').classList.toggle('error', !nameOk);
+  $('name-error').hidden = nameOk;
   $('phone-field').classList.toggle('error', !phoneOk);
   $('phone-error').hidden = phoneOk;
-  if (!$('name').value.trim()) { $('name').focus(); return; }
-  if (!phoneOk) { $('phone').focus(); return; }
+  if (!nameOk) return $('name').focus();
+  if (!phoneOk) return $('phone').focus();
 
   saveBooking({ ...booking, name: $('name').value.trim(), phone: $('phone').value, email: $('email').value });
   location.href = 'confirmed.html';
 });
 
-renderSummary();
+// ---------- start ----------
+fillTimes();
+setParty(2);
 updateFind();
+goTo(1, false);

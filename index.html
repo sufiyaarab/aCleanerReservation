@@ -22,8 +22,8 @@
     <section class="home-split">
       <img src="images/photo-2-waffles.png" alt="Waffles with strawberries, whipped cream and maple syrup">
       <div>
-        <h1>Brunch, every day 9 am to 1:30 pm</h1>
-        <p>Two locations, same waffles. Book a table for 1 to 8 people in under a minute.</p>
+        <h1>Brunch, Tuesday to Sunday, 9 am to 1:30 pm</h1>
+        <p>Two locations, serving the same delicious waffles. Book a table for 1 to 8 people in under a minute.</p>
         <button class="btn btn-primary" data-open-locations>Reserve a table</button>
         <p class="help">Walk-ins welcome at the bar.</p>
       </div>
@@ -31,11 +31,11 @@
 
     <hr>
     <div class="hours-row">
-      <div><strong>Location 1</strong><br>Today 9 am to 1:30 pm</div>
-      <div><strong>Location 2</strong><br>Today 9 am to 1:30 pm</div>
+      <div><strong>Oshawa</strong><br>124 Mockingbird Lane, Oshawa, ON L1H 7K4<br>(905) 555-0143<br>Tue to Sun 9 am to 1:30 pm, closed Mondays</div>
+      <div><strong>Toronto</strong><br>890 Nonexistent Avenue, Toronto, ON M5V 2H1<br>(416) 555-0198<br>Tue to Sun 9 am to 1:30 pm, closed Mondays</div>
     </div>
 
-    <p class="footer-line">Location 1 · Location 2 · 123-456-7890</p>
+    <p class="footer-line">Groups of 9 or more: email groups@cravesandcrumble.com at least 48 hours ahead.<br>Oshawa (905) 555-0143 · Toronto (416) 555-0198</p>
   </main>
 
   <!-- F02 Choose location (pop-up) -->
@@ -46,12 +46,12 @@
         <button class="link-btn" value="cancel" formnovalidate>Close</button>
       </div>
       <label class="loc-option">
-        <input type="radio" name="loc" value="Location 1">
-        <span><strong>Location 1</strong><br>Today 9 am to 1:30 pm · Patio open</span>
+        <input type="radio" name="loc" value="Oshawa">
+        <span><strong>Oshawa, Ontario</strong><br>124 Mockingbird Lane · Tue to Sun 9 am to 1:30 pm</span>
       </label>
       <label class="loc-option">
-        <input type="radio" name="loc" value="Location 2">
-        <span><strong>Location 2</strong><br>Today 9 am to 1:30 pm · Step-free entrance</span>
+        <input type="radio" name="loc" value="Toronto">
+        <span><strong>Toronto, Ontario</strong><br>890 Nonexistent Avenue · Tue to Sun 9 am to 1:30 pm</span>
       </label>
       <p><button type="button" class="btn btn-primary" id="loc-continue" disabled>Continue to booking</button></p>
     </form>
@@ -63,8 +63,12 @@
     const cont = document.getElementById('loc-continue');
     document.querySelectorAll('[data-open-locations]').forEach(b => b.addEventListener('click', () => dlg.showModal()));
     dlg.addEventListener('change', () => { cont.disabled = false; });
+    // Pre-select the location chosen earlier this session (R-3)
+    const remembered = getLocation();
+    if (remembered) { dlg.querySelector(`input[value="${remembered}"]`).checked = true; cont.disabled = false; }
     cont.addEventListener('click', () => {
       const loc = dlg.querySelector('input[name=loc]:checked').value;
+      setLocation(loc);
       location.href = 'booking.html?loc=' + encodeURIComponent(loc);
     });
   </script>
