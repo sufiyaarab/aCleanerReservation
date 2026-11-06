@@ -5,7 +5,7 @@
 const $ = (id) => document.getElementById(id);
 
 const booking = {
-  location: new URLSearchParams(location.search).get('loc') || 'Location 1',
+  location: new URLSearchParams(location.search).get('loc') || 'Oshawa',
   party: 2,
   date: '',
   time: '',
@@ -37,7 +37,10 @@ function hash(str) {
   for (const c of str) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return h;
 }
-function isFullyBooked(iso) { return new Date(iso + 'T12:00:00').getDay() === 1; } // Mondays
+function isClosed(iso) { return new Date(iso + 'T12:00:00').getDay() === 1; } // closed Mondays
+// FAKE: every date whose day number is a multiple of 7 (Nov 7, 14, 21, 28) is fully booked, to demo F06
+function isFullyBooked(iso) { return Number(iso.slice(8, 10)) % 7 === 0; }
+function nextOpenDay(iso) { let d = addDays(iso, 1); while (isClosed(d) || isFullyBooked(d)) d = addDays(d, 1); return d; }
 function takenTimes(iso, loc) {
   const h = hash(iso + loc);
   return [TIMES[h % TIMES.length], TIMES[(h >> 4) % TIMES.length]];
@@ -61,24 +64,29 @@ function renderSummary() {
   $('summary').innerHTML = items.map(i => '<li>' + i + '</li>').join('');
   $('loc-label').textContent = booking.location;
   document.querySelectorAll('.loc-name').forEach(e => e.textContent = booking.location);
+  $('grat-note').textContent = gratuityNote(booking.party);
+  document.querySelectorAll('.loc-phone').forEach(e => e.textContent = LOCATIONS[booking.location].phone);
 }
 
 // ---------- F03 step 1 ----------
 $('loc').value = booking.location;
 $('date').min = todayISO();          // past dates disabled
-$('date').value = todayISO();        // default today
-booking.date = todayISO();
+booking.date = isClosed(todayISO()) ? addDays(todayISO(), 1) : todayISO(); // default today (Tuesday if today is Monday)
+$('date').value = booking.date;
 TIMES.forEach(t => $('time').add(new Option(t, t)));
 
 function updateFind() {
-  $('find').disabled = !$('time').value;
+  const closed = isClosed(booking.date);
+  $('date-help').textContent = closed ? "We're closed on Mondays. Please pick Tuesday to Sunday." : 'Open Tuesday to Sunday. Closed Mondays.';
+  $('date-help').classList.toggle('notice', closed);
+  $('find').disabled = !$('time').value || closed;
   $('find-help').hidden = !!$('time').value;
 }
 $('loc').addEventListener('change', e => { booking.location = e.target.value; renderSummary(); });
-$('date').addEventListener('change', e => { booking.date = e.target.value; renderSummary(); });
+$('date').addEventListener('change', e => { booking.date = e.target.value; renderSummary(); updateFind(); });
 $('time').addEventListener('change', updateFind);
 $('party-minus').addEventListener('click', () => { if (booking.party > 1) booking.party--; $('party').textContent = booking.party; renderSummary(); });
-$('party-plus').addEventListener('click', () => { if (booking.party < 8) booking.party++; $('party').textContent = booking.party; renderSummary(); });
+$('party-plus').addEventListener('click', () => { if (booking.party < POLICY.maxOnline) booking.party++; $('party').textContent = booking.party; renderSummary(); });
 
 $('find').addEventListener('click', search);
 
@@ -96,12 +104,11 @@ function showResults() {
 
   // F06: nothing free that day
   if (isFullyBooked(booking.date)) {
-    let next = addDays(booking.date, 1);
-    while (isFullyBooked(next)) next = addDays(next, 1);
+    const next = nextOpenDay(booking.date);
     $('none-msg').textContent = `We're fully booked at ${booking.location} on ${prettyDate(booking.date)}.`;
     $('try-next').textContent = 'Try ' + prettyDate(next);
-    $('try-next').onclick = () => { $('date').value = booking.date = next; renderSummary(); search(); };
-    const other = booking.location === 'Location 1' ? 'Location 2' : 'Location 1';
+    $('try-next').onclick = () => { $('date').value = booking.date = next; renderSummary(); updateFind(); search(); };
+    const other = booking.location === 'Oshawa' ? 'Toronto' : 'Oshawa';
     $('try-other-loc').textContent = `Check ${other} instead`;
     $('try-other-loc').onclick = () => { $('loc').value = booking.location = other; renderSummary(); search(); };
     $('times-none').hidden = false;

@@ -27,7 +27,8 @@
       <hr>
       <button type="button" class="btn">Add to calendar</button>
       <button type="button" class="btn" id="directions">Get directions</button>
-      <p class="help">Need to change it? Call 123-456-7890.</p>
+      <p class="help" id="grat-note"></p>
+      <p class="help">Need to change or cancel? Please let us know at least 4 hours ahead by calling <span id="loc-phone"></span>. Tables are held for 15 minutes past your booking time, then released to walk-in guests.</p>
     </div>
   </main>
 
@@ -35,16 +36,18 @@
   <script>
     const b = loadBooking() || {
       // fallback sample so the page still shows something when opened directly
-      location: 'Location 1', party: 2, date: '2026-11-06', time: '11:00 am',
-      table: 'No preference', dietary: [], notes: '', name: 'Guest Name', phone: '123-456-7890'
+      location: 'Oshawa', party: 2, date: '2026-11-06', time: '11:00 am',
+      table: 'No preference', dietary: [], notes: '', name: 'Guest Name', phone: '905-555-0100'
     };
     const conf = String(Math.floor(100000 + Math.random() * 900000));
     const date = new Date(b.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
     document.getElementById('heading').textContent = `Reservation confirmed, ${b.name}.`;
     document.getElementById('conf-line').textContent = `Confirmation #${conf}. We've texted it to ${b.phone}.`;
-    document.getElementById('directions').textContent = `Get directions to ${b.location}`;
+    document.getElementById('directions').textContent = `Get directions to ${LOCATIONS[b.location].address}`;
+    document.getElementById('grat-note').textContent = gratuityNote(b.party);
+    document.getElementById('loc-phone').textContent = LOCATIONS[b.location].phone;
     const rows = [
-      ['Location', b.location], ['Date', date], ['Time', b.time], ['Party size', b.party],
+      ['Location', `${b.location}, ${LOCATIONS[b.location].address}`], ['Date', date], ['Time', b.time], ['Party size', b.party],
       ['Seating', b.table], ['Dietary needs', [...b.dietary, b.notes].filter(Boolean).join(', ') || 'None'],
     ];
     document.getElementById('details').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd><span></span>`).join('');

@@ -35,9 +35,9 @@
       <section class="step" id="step1">
         <h2>1. When and how many</h2>
         <div class="body">
-          <p>Location: <strong id="loc-label">Location 1</strong>
+          <p>Location: <strong id="loc-label">Oshawa</strong>
             <select id="loc" aria-label="Change location">
-              <option>Location 1</option><option>Location 2</option>
+              <option>Oshawa</option><option>Toronto</option>
             </select>
           </p>
           <div class="field">
@@ -47,7 +47,7 @@
               <strong id="party" aria-live="polite">2</strong>
               <button type="button" class="btn" id="party-plus" aria-label="More people">+</button>
             </div>
-            <span class="help">Up to 8 online. For 9 or more, call us at 123-456-7890.</span>
+            <span class="help">Up to 8 online. For 9 or more, call us at <span class="loc-phone">(905) 555-0143</span>.</span>
           </div>
           <label class="field">Date <input type="date" id="date"></label>
           <label class="field">Time
@@ -121,8 +121,8 @@
           <h3>Who's the booking for?</h3>
           <form id="contact" novalidate>
             <label class="field">Full name <input id="name" autocomplete="name" required></label>
-            <label class="field" id="phone-field">Mobile number <input id="phone" type="tel" autocomplete="tel" placeholder="123-456-7890" required>
-              <span class="help" id="phone-error" hidden>Enter a 10-digit number, like 123-456-7890</span>
+            <label class="field" id="phone-field">Mobile number <input id="phone" type="tel" autocomplete="tel" placeholder="905-555-0100" required>
+              <span class="help" id="phone-error" hidden>Enter a 10-digit number, like 905-555-0100</span>
             </label>
             <label class="field">Email for confirmation (optional) <input id="email" type="email" autocomplete="email"></label>
             <p class="help">Parties of 6 or more have a gratuity added.</p>
