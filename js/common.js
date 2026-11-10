@@ -1,24 +1,19 @@
-// Shared on every page: the Gordon placeholder bubble.
-// Gordon himself is not built yet; this only reserves his spot (bottom-right).
+// Shared on every page: Gordon's bubble in the bottom-right corner.
+// On the booking page it opens Gordon's panel (js/gordon.js); elsewhere it takes the guest there.
+// Nothing plays or asks for anything until the guest clicks (R-12).
 (function () {
   const bubble = document.createElement('button');
   bubble.className = 'gordon-bubble';
+  bubble.id = 'gordon-bubble';
   bubble.type = 'button';
   bubble.setAttribute('aria-label', 'Open Gordon, the booking assistant');
-  bubble.innerHTML = '<span>Book by talking or typing</span><img src="images/gordon.png" alt="">';
-
-  const panel = document.createElement('div');
-  panel.className = 'gordon-panel';
-  panel.hidden = true;
-  panel.innerHTML =
-    '<strong>Gordon</strong> (placeholder)' +
-    '<p>Gordon will live here: captions, a mic button, a text box and a close button.</p>' +
-    '<button type="button" class="btn">Close</button>';
-
-  bubble.addEventListener('click', () => { panel.hidden = !panel.hidden; });
-  panel.querySelector('button').addEventListener('click', () => { panel.hidden = true; });
-
-  document.body.append(panel, bubble);
+  bubble.setAttribute('aria-expanded', 'false');
+  bubble.innerHTML = '<span>Book by typing with Gordon</span><img src="images/gordon.png" alt="">';
+  bubble.addEventListener('click', () => {
+    if (window.Gordon) window.Gordon.toggle();
+    else location.href = 'booking.html?gordon=1';
+  });
+  document.body.append(bubble);
 })();
 
 // The two locations. Change details here and every page picks them up.

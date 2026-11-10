@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reserve · Craves &amp; Crumble</title>
   <link rel="stylesheet" href="css/styles.css">
+  <!-- three.js 0.160 for Gordon's 3D head, served from this site (no CDN sees the guest's IP).
+       Loaded only when Gordon is opened. -->
+  <script type="importmap">
+    { "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/" } }
+  </script>
 </head>
 <body>
   <nav class="nav">
@@ -98,11 +105,11 @@
         <div class="body">
           <p>Optional, so the kitchen can prepare.</p>
           <div class="chips" id="diet-chips">
-            <button type="button" class="chip" aria-pressed="false">Nut allergy</button>
-            <button type="button" class="chip" aria-pressed="false">Gluten-free</button>
-            <button type="button" class="chip" aria-pressed="false">Dairy-free</button>
-            <button type="button" class="chip" aria-pressed="false">Vegetarian</button>
-            <button type="button" class="chip" aria-pressed="false">Shellfish allergy</button>
+            <button type="button" class="chip" aria-pressed="false" data-value="Nut allergy">Nut allergy</button>
+            <button type="button" class="chip" aria-pressed="false" data-value="Gluten-free">Gluten-free</button>
+            <button type="button" class="chip" aria-pressed="false" data-value="Dairy-free">Dairy-free</button>
+            <button type="button" class="chip" aria-pressed="false" data-value="Vegetarian">Vegetarian</button>
+            <button type="button" class="chip" aria-pressed="false" data-value="Shellfish allergy">Shellfish allergy</button>
           </div>
           <label class="field">Anything else?
             <textarea id="notes" rows="3" placeholder="Celebrating a birthday, high chair needed"></textarea>
@@ -166,6 +173,11 @@
   </dialog>
 
   <script src="js/common.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/booking.js"></script>
+  <script src="js/gordon-parser.js"></script>
+  <script src="js/gordon-lang.js"></script>
+  <script src="js/gordon.js"></script>
+  <script src="js/assist.js"></script>
 </body>
 </html>

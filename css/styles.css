@@ -38,6 +38,7 @@ hr { border: 0; border-top: 1px solid var(--tan); margin: 24px 0; }
 .nav .logo img { height: 40px; width: auto; }
 .nav .links { display: flex; gap: 16px; margin-left: auto; }
 .nav .current { font-weight: bold; }
+.lang-toggle { white-space: nowrap; }
 
 main { padding: 32px; max-width: 1200px; margin: 0 auto; }
 
@@ -106,9 +107,32 @@ dialog::backdrop { background: rgba(74, 20, 24, .45); }
 }
 .gordon-bubble img { width: 72px; height: 72px; border-radius: 50%; background: var(--tan); object-fit: cover; }
 .gordon-panel {
-  position: fixed; right: 24px; bottom: 108px; width: 300px; z-index: 20;
-  background: var(--ivory); border: 1px solid var(--maroon); border-radius: 4px; padding: 16px;
+  position: fixed; right: 24px; bottom: 108px; width: 360px; max-height: calc(100vh - 196px); z-index: 20; /* stays below the nav so Reserve is never covered (R-2) */
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--ivory); border: 1px solid var(--maroon); border-radius: 4px; padding: 12px 16px;
 }
+.gordon-panel[hidden] { display: none; }
+.gordon-top { display: flex; justify-content: space-between; align-items: baseline; }
+.gordon-top h2 { margin: 0; font-size: 20px; }
+.gordon-top-actions { display: flex; gap: 12px; }
+.gordon-view { height: 200px; flex: none; display: flex; justify-content: center; border-bottom: 1px solid var(--tan); overflow: hidden; }
+.gordon-view img { height: 100%; width: auto; object-fit: cover; }
+.gordon-view canvas { display: block; }
+.gordon-log { flex: 1 1 auto; min-height: 80px; overflow-y: auto; font-size: 15px; }
+.gordon-line { margin: 6px 0; }
+.gordon-line.from-guest { padding-left: 12px; border-left: 2px solid var(--tan); }
+.gordon-replies { margin: 0; }
+.gordon-replies .chip { font-size: 14px; padding: 4px 10px; }
+.gordon-input { display: flex; gap: 8px; }
+.gordon-input input { flex: 1; font: inherit; color: var(--maroon); padding: 6px 8px; border: 1px solid var(--maroon); border-radius: 4px; background: var(--ivory); }
+.gordon-note { margin: 0; }
+.gordon-mic-status { margin: 0; }
+.gordon-mic-status:empty { display: none; }
+#gordon-mic.listening { background: var(--burgundy); border-color: var(--burgundy); color: var(--ivory); }
+.gordon-line.hearing { font-style: italic; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Keep the form visible beside the open panel so the guest can watch it fill in (R-20) */
+@media (min-width: 1100px) { body.gordon-open main.booking { margin-right: 400px; } }
 
 /* Phone width (M01): Reserve stays in the nav */
 @media (max-width: 760px) {
@@ -122,4 +146,48 @@ dialog::backdrop { background: rgba(74, 20, 24, .45); }
   .plan-wrap { flex-direction: column; }
   .floor { transform: scale(.5); transform-origin: top left; margin-bottom: -200px; }
   .gordon-bubble span { display: none; }
+  .gordon-panel { left: 8px; right: 8px; width: auto; bottom: 96px; max-height: 70vh; }
+  .gordon-view { height: 120px; }
 }
+
+/* Field Gordon just filled (R-20): a brief burgundy outline */
+.just-filled { outline: 3px solid var(--burgundy); outline-offset: 4px; border-radius: 4px; transition: outline-color 1.2s ease-out .4s; }
+@media (prefers-reduced-motion: reduce) { .just-filled { transition: none; } }
+
+/* Gordon's help tools (Tutorial 9): js/assist.js */
+.assist-tools { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
+.assist-tools .chip { font-size: 14px; padding: 4px 10px; }
+.assist-tools .chip[hidden] { display: none; }
+#assist-cmd.listening { background: var(--burgundy); border-color: var(--burgundy); color: var(--ivory); }
+.assist-guide { flex: none; border: 1px solid var(--maroon); border-radius: 4px; padding: 8px 12px; background: var(--ivory); }
+.assist-guide[hidden] { display: none; }
+.assist-guide-count { margin: 0; font-size: 14px; }
+.assist-guide-text { margin: 4px 0 8px; font-size: 17px; font-weight: 600; }
+.assist-guide-nav { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.assist-status { margin: 0; }
+.assist-status:empty { display: none; }
+.assist-panel .gordon-view { height: 160px; }
+.assist-reading { background: var(--tan); outline: 2px solid var(--maroon); outline-offset: 2px; }
+.assist-target { outline: 3px dashed var(--burgundy); outline-offset: 4px; }
+
+/* visible keyboard focus everywhere */
+:focus-visible { outline: 3px solid var(--burgundy); outline-offset: 2px; }
+
+/* keep everything inside Gordon's panel now that it has the help tools */
+.gordon-panel { overflow-y: auto; }
+.gordon-panel > * { flex-shrink: 0; }
+.gordon-panel .gordon-log { flex: 1 1 auto; min-height: 60px; }
+.gordon-panel .gordon-view { height: 150px; }
+.gordon-input input { min-width: 0; }
+.assist-panel .gordon-log:empty { display: none; }
+.assist-panel > p { margin: 0; }
+.assist-guide-text { font-size: 16px; }
+.assist-guide .btn { padding: 4px 12px; font-size: 15px; }
+.assist-reading, .assist-target { scroll-margin-top: 90px; }
+@media (max-width: 700px) {
+  .gordon-panel { max-height: 60vh; }
+  .gordon-panel .gordon-view { height: 90px; }
+  .assist-reading, .assist-target { scroll-margin-top: 70px; }
+}
+/* phones: the panel covers the bottom of the screen, so let the page scroll up past it */
+@media (max-width: 700px) { body.gordon-open { padding-bottom: 62vh; } }
