@@ -57,7 +57,7 @@ Click the floating bubble in the bottom-right corner to interact with **Gordon**
 
 ---
 
-## Gordon's Accessibility & Help Tools (Tutorial 9)
+## Gordon's Accessibility & Help Tools
 
 `js/assist.js` injects a robust accessibility toolbar across all pages:
 
