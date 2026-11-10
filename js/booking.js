@@ -321,7 +321,8 @@ $('filter').addEventListener('click', e => {
   renderPlan();
 });
 $('book-table').addEventListener('click', () => chooseTable(describe(TABLES.find(t => t[0] === picked))));
-$('no-pref').addEventListener('click', () => chooseTable($('no-pref').textContent));
+const noPrefText = () => (filter === 'all' ? 'No preference' : `No preference, any ${filter === 'High' ? 'high-top' : 'low table'}`);
+$('no-pref').addEventListener('click', () => chooseTable(noPrefText()));
 
 // ---------- F08 dietary needs ----------
 $('diet-chips').addEventListener('click', e => {
@@ -333,7 +334,7 @@ function finishDiet(skip) {
     $('diet-chips').querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', 'false'));
     $('notes').value = '';
   }
-  booking.dietary = [...$('diet-chips').querySelectorAll('[aria-pressed="true"]')].map(c => c.textContent);
+  booking.dietary = [...$('diet-chips').querySelectorAll('[aria-pressed="true"]')].map(c => c.dataset.value); // English values, whatever language is shown
   booking.notes = $('notes').value.trim();
   dietDone = true;
   goTo(5);
@@ -381,3 +382,70 @@ fillTimes();
 setParty(2);
 updateFind();
 goTo(1, false);
+
+// ---------- Hooks for Gordon (js/gordon.js) ----------
+// Gordon fills the same visible form (R-20) and checks every value with the same rules.
+function highlight(el) {
+  const f = el.closest('.field') || el;
+  f.classList.remove('just-filled'); void f.offsetWidth; // restart the highlight
+  f.classList.add('just-filled');
+  setTimeout(() => f.classList.remove('just-filled'), 1600);
+}
+window.Booking = {
+  state: booking,
+  TIMES,
+  todayISO, prettyDate, addDays, isClosed, isFullyBooked, isPast, openTimes, nextOpenDay,
+  setLocation(loc) {
+    booking.location = $('loc').value = loc; setLocation(loc);
+    if (current > 1) goTo(1, false);
+    highlight($('loc')); updateFind(); renderSummary();
+  },
+  setParty(n) {
+    if (current > 1) goTo(1, false);
+    setParty(n); highlight($('party')); updateFind();
+  },
+  setDate(iso) {
+    booking.date = $('date').value = iso;
+    if (current > 1) goTo(1, false);
+    fillTimes(); highlight($('date')); updateFind(); renderSummary();
+  },
+  setTime(t) {
+    if (current > 1) goTo(1, false);
+    $('time').value = t; highlight($('time')); updateFind();
+  },
+  // What the search would find, without touching the page
+  check() {
+    const d = booking.date, t = $('time').value;
+    if (isClosed(d)) return { status: 'closed' };
+    if (isFullyBooked(d)) return { status: 'fullyBooked', next: nextOpenDay(d) };
+    const taken = takenTimes(d, booking.location);
+    const free = (x) => !taken.includes(x) && !isPast(d, x);
+    if (free(t)) return { status: 'ok' };
+    const i = TIMES.indexOf(t);
+    const before = TIMES.slice(0, i).reverse().filter(free), after = TIMES.slice(i + 1).filter(free);
+    let offers = [before[0], after[0]].filter(Boolean);
+    if (!before.length) offers = after.slice(0, 2);
+    if (!after.length) offers = before.slice(0, 2).reverse();
+    return { status: 'full', offers };
+  },
+  // Show the time on the page (step 2), as if the guest pressed Find a table
+  showTime() { search(); },
+  setSeating(pref) { // 'Low' | 'High' | null
+    booking.table = pref ? `No preference, any ${pref === 'High' ? 'high-top' : 'low table'}` : 'No preference';
+    goTo(3, false); highlight($('step3')); resume();
+  },
+  setDietary(items, notes = '') {
+    $('diet-chips').querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', items.includes(c.dataset.value)));
+    $('notes').value = notes;
+    if (current === 4 || current === 5) finishDiet(false); else { booking.dietary = items; booking.notes = notes; }
+    highlight($('diet-chips'));
+  },
+  setContact(name, phone) {
+    if (current !== 5) goTo(5);
+    if (name) { $('name').value = name; highlight($('name')); }
+    if (phone) { $('phone').value = phone; highlight($('phone')); }
+  },
+  contact: () => ({ name: $('name').value.trim(), phone: $('phone').value.trim() }),
+  confirm() { $('contact').requestSubmit(); },
+  ready: () => !!(booking.time && booking.table && dietDone),
+};
