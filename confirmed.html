@@ -36,25 +36,30 @@
   <script src="js/i18n.js"></script>
   <script src="js/assist.js"></script>
   <script>
+    // The booking page only passes a minimized, encrypted record (see saveBooking in js/common.js):
+    // first name, last 4 phone digits and a count of dietary needs. No full name, number or health details.
     const sample = {
       // fallback sample so the page still shows something when opened directly
       location: 'Oshawa', party: 2, date: '2026-11-06', time: '11:00 am',
-      table: 'No preference', dietary: [], notes: '', name: 'Guest Name', phone: '905-555-0100'
+      table: 'No preference', firstName: 'Guest', phoneLast4: '0100', dietCount: 0,
     };
-    let b = loadBooking();
-    if (!b || !LOCATIONS[b.location]) b = sample;
-    const conf = String(Math.floor(100000 + Math.random() * 900000));
-    const date = new Date(b.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
-    document.getElementById('heading').textContent = `Reservation confirmed, ${b.name}.`;
-    document.getElementById('conf-line').textContent = `Confirmation #${conf}. We've texted it to ${b.phone}.`;
-    document.getElementById('directions').textContent = `Get directions to ${LOCATIONS[b.location].address}`;
-    document.getElementById('grat-note').textContent = gratuityNote(b.party);
-    document.getElementById('loc-phone').textContent = LOCATIONS[b.location].phone;
-    const rows = [
-      ['Location', `${b.location}, ${LOCATIONS[b.location].address}`], ['Date', date], ['Time', b.time], ['Party size', b.party],
-      ['Seating', b.table], ['Dietary needs', [...b.dietary, b.notes].filter(Boolean).join(', ') || 'None'],
-    ];
-    document.getElementById('details').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd><span></span>`).join('');
+    (async () => {
+      let b = await loadBooking();
+      if (!b || !LOCATIONS[b.location]) b = sample;
+      const conf = String(Math.floor(100000 + Math.random() * 900000));
+      const date = new Date(b.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+      document.getElementById('heading').textContent = b.firstName ? `Reservation confirmed, ${b.firstName}.` : 'Reservation confirmed.';
+      document.getElementById('conf-line').textContent = `Confirmation #${conf}. We've texted it to the number ending in ${b.phoneLast4}.`;
+      document.getElementById('directions').textContent = `Get directions to ${LOCATIONS[b.location].address}`;
+      document.getElementById('grat-note').textContent = gratuityNote(b.party);
+      document.getElementById('loc-phone').textContent = LOCATIONS[b.location].phone;
+      const diet = !b.dietCount ? 'None' : b.dietCount === 1 ? '1 need noted for the kitchen' : `${b.dietCount} needs noted for the kitchen`;
+      const rows = [
+        ['Location', `${b.location}, ${LOCATIONS[b.location].address}`], ['Date', date], ['Time', b.time], ['Party size', b.party],
+        ['Seating', b.table], ['Dietary needs', diet],
+      ];
+      document.getElementById('details').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd><span></span>`).join('');
+    })();
   </script>
 </body>
 </html>

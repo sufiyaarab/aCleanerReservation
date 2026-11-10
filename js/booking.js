@@ -373,8 +373,8 @@ $('contact').addEventListener('submit', e => {
   if (!nameOk) return $('name').focus();
   if (!phoneOk) return $('phone').focus();
 
-  saveBooking({ ...booking, name: $('name').value.trim(), phone: $('phone').value, email: $('email').value });
-  location.href = 'confirmed.html';
+  // Only a minimized, encrypted copy is kept for the confirmation page (see saveBooking in common.js)
+  saveBooking({ ...booking, name: $('name').value.trim(), phone: $('phone').value }).finally(() => { location.href = 'confirmed.html'; });
 });
 
 // ---------- start ----------

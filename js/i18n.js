@@ -92,7 +92,10 @@ const I18N = (() => {
     [/^Book table (\d+)$/, (m, n) => `Réserver la table ${n}`],
     [/^No table picked yet\. Faded tables don't fit a party of (\d+)\.$/, (m, n) => `Aucune table choisie. Les tables pâles ne conviennent pas à un groupe de ${people(n)}.`],
     [/^Reservation confirmed, (.+)\.$/, (m, n) => `Réservation confirmée, ${n}.`],
-    [/^Confirmation #(\d+)\. We've texted it to (.+)\.$/, (m, c, p) => `Confirmation no ${c}. Nous l’avons envoyée par texto au ${p}.`],
+    [/^Confirmation #(\d+)\. We've texted it to the number ending in (\d+)\.$/, (m, c, p) => `Confirmation no ${c}. Nous l’avons envoyée par texto au numéro se terminant par ${p}.`],
+    [/^Reservation confirmed\.$/, () => 'Réservation confirmée.'],
+    [/^1 need noted for the kitchen$/, () => '1 besoin transmis à la cuisine'],
+    [/^(\d+) needs noted for the kitchen$/, (m, n) => `${n} besoins transmis à la cuisine`],
     [/^Get directions to (.+)$/, (m, a) => `Itinéraire vers ${a}`],
     [/^(\d+) (Low|High)$/, (m, n, h) => `${n} ${h === 'High' ? 'Haute' : 'Basse'}`],
     // pieces inside longer text
