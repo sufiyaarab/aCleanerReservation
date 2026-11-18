@@ -10,7 +10,6 @@
 (function () {
   const lang = () => (typeof I18N !== 'undefined' ? I18N.lang : 'en');
   const page = document.querySelector('main.booking') ? 'booking' : document.querySelector('main.confirm') ? 'confirmed' : 'home';
-  const synth = window.speechSynthesis;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------- words, in English and French ----------
@@ -26,10 +25,12 @@
       noRec: 'Voice commands need Chrome or Edge. Every button still works with the keyboard.',
       noVoice: 'This computer has no built-in voice, so I will show everything as text instead.',
       stopped: 'Stopped.',
+      voiceLoading: "Warming up my proper British voice. It's a free AI voice that runs on your computer, about 90 MB the first time. My understudy will cover until then.",
+      voiceReady: 'Right, the real voice is ready. Much better.',
       readStart: 'Reading the page. Press Stop at any time.',
-      reading: 'Reading', readDone: 'That is the end of the page.',
+      reading: 'Reading', readDone: "That's the end of the page. Riveting stuff.",
       step: (i, n) => `Step ${i} of ${n}`, guideDone: 'That was the last step. Press Exit guide when you are ready.',
-      welcome: "Hello! Welcome to Craves & Crumble. I'm Gordon, your accessibility assistant. I can read this page to you, guide you step by step, or book a table with you.",
+      welcome: "Hello! Welcome to Craves & Crumble. I'm Gordon, your accessibility assistant, and frankly the best-dressed waffle in Ontario. I can read this page to you, guide you step by step, or book a table with you.",
       helpText: {
         home: 'To book, press Reserve a table, pick Oshawa or Toronto, then press Continue to booking. Or press Book a table with Gordon and we can do it together. Read page reads this page aloud, Guide me shows the steps one at a time, and Stop stops me talking.',
         booking: 'Tell me what you want in your own words, for example "4 people Sunday at 11", and I fill in the form for you. You can also fill it in yourself. Read page reads this page aloud, Guide me shows the steps one at a time, and Stop stops me talking. While Talk is on, you can say "Read page", "Guide me" or "Stop reading".',
@@ -68,6 +69,8 @@
       noRec: 'Les commandes vocales demandent Chrome ou Edge. Tous les boutons fonctionnent au clavier.',
       noVoice: "Cet ordinateur n'a pas de voix intégrée, alors j'affiche tout en texte.",
       stopped: 'Arrêté.',
+      voiceLoading: "Je prépare ma voix britannique (voix IA gratuite qui tourne sur votre ordinateur, environ 90 Mo la première fois). En français, j'utilise la voix de votre ordinateur.",
+      voiceReady: 'Ma voix britannique est prête pour l’anglais.',
       readStart: 'Je lis la page. Appuyez sur Arrêter quand vous voulez.',
       reading: 'Lecture', readDone: "C'est la fin de la page.",
       step: (i, n) => `Étape ${i} sur ${n}`, guideDone: "C'était la dernière étape. Appuyez sur Quitter le guide quand vous êtes prêt.",
@@ -186,33 +189,30 @@
     stillTimer = setInterval(() => { open = !open; img.src = open ? 'images/gordon-open.png' : 'images/gordon-closed.png'; }, 160);
   }
 
-  let current = null;      // the utterance playing now
+  // His voice is in js/gordon-voice.js: a free AI British voice (Kokoro, run in the browser),
+  // with the computer's built-in voices while it loads or if it can't run.
+  let current = null;      // the line playing now
   let warnedNoVoice = false;
-  function voice() {
-    if (!synth) return null;
-    const pre = lang() === 'fr' ? /^fr/i : /^en/i;
-    const voices = synth.getVoices().filter(v => v.localService && pre.test(v.lang));
-    const male = lang() === 'fr' ? /thomas|nicolas|daniel|paul|henri|male/i : /male|daniel|george|guy|david|mark/i;
-    return voices.find(v => /CA/i.test(v.lang) && male.test(v.name)) || voices.find(v => male.test(v.name)) || voices.find(v => /CA/i.test(v.lang)) || voices[0] || null;
-  }
+  const voice = () => !!window.GordonVoice && GordonVoice.available(lang());
   // Says one piece of text. Resolves true when it finished, false when it was stopped or couldn't play.
   function speak(text) {
-    return new Promise(resolve => {
-      const v = voice();
-      if (!v) {
-        if (!warnedNoVoice) { warnedNoVoice = true; caption(t().noVoice); }
-        return resolve(false);
-      }
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.voice = v; u.lang = v.lang; u.rate = 1;
-      current = u;
-      u.onstart = () => mouth(true);
+    if (!voice()) {
+      if (!warnedNoVoice) { warnedNoVoice = true; caption(t().noVoice); }
+      return Promise.resolve(false);
+    }
+    const mine = current = {};
+    return GordonVoice.speak(text, { lang: lang(), onstart: () => mouth(true) }).then(ok => {
       // if something else cut in (Stop, or Gordon answering), this counts as stopped
-      u.onend = u.onerror = (e) => { const mine = current === u; if (mine) { current = null; mouth(false); } resolve(mine && e.type === 'end'); };
-      synth.speak(u);
+      if (current === mine) { current = null; mouth(false); }
+      return ok;
     });
   }
+  // Tell the guest once when the AI voice starts loading and when it's ready (visibility of system status).
+  window.addEventListener('gordonvoice', (e) => {
+    if (e.detail.pct != null) return;
+    if (e.detail.state === 'loading') caption(t().voiceLoading);
+    if (e.detail.state === 'ready') caption(t().voiceReady);
+  });
   // What the buttons use: show it, then say it.
   function tell(text) { caption(text); return speak(text); }
 
@@ -222,7 +222,7 @@
   function stop(quiet) {
     readRun++;
     current = null;
-    if (synth) synth.cancel();
+    if (window.GordonVoice) GordonVoice.cancel();
     mouth(false);
     clearReading();
     if (!quiet) caption(t().stopped);

@@ -99,6 +99,7 @@
     $g('gordon-log').scrollTop = $g('gordon-log').scrollHeight;
   }
   function say(text, replies = []) {
+    g.lastSaid = text;
     addLine('gordon', text);
     if (!Voice.speaking()) Avatar.talk(Math.min(3500, 400 + text.length * 35));
     const box = $g('gordon-replies');
@@ -169,10 +170,20 @@
     // The guest may have edited the form by hand since (R-20): trust the form
     if (!$('time').value) g.known.time = false;
     if (!S.time) g.timeOk = false;
-    const p = GordonParser.parse(L.lang === 'fr' ? L.toEnglish(text) : text, B.todayISO(), g.asking);
+    // Claude reads the message when a local API key is set (js/gordon-ai.js); otherwise, or if that
+    // fails, the built-in parser does. Either way every value goes through the checks below.
+    let p = null;
+    if (typeof GordonAI !== 'undefined' && GordonAI.enabled) {
+      $g('gordon-mic-status').textContent = L.lang === 'fr' ? 'Gordon réfléchit…' : 'Gordon is thinking…';
+      p = await GordonAI.read(text, { today: B.todayISO(), asking: g.asking, lang: L.lang, lastQuestion: g.lastSaid });
+      $g('gordon-mic-status').textContent = '';
+      if (p && !Object.keys(p).length) p = null; // nothing understood: give the built-in parser a go
+    }
+    if (!p) p = GordonParser.parse(L.lang === 'fr' ? L.toEnglish(text) : text, B.todayISO(), g.asking);
     const notes = [];      // what he did, said back in one reply
     let understood = false;
     let stop = null;       // a problem he has to ask about before moving on
+    if (p.answer) { understood = true; notes.push(p.answer); } // Claude answered a question about the restaurant
 
     if (p.wantsForm && !p.party && !p.date && !p.time) {
       say(t().toForm);
@@ -342,7 +353,7 @@
   // R-13: talk and type are interchangeable at any point. R-14: what he hears is captioned live.
   const Voice = (() => {
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const synth = window.speechSynthesis;
+    const synth = { cancel: () => window.GordonVoice && GordonVoice.cancel() }; // stops his voice, AI or built-in
     const supported = !!Rec;
     let rec = null, on = false, listening = false, explained = false, soundOn = true, live = null, heard = '', utter = null;
     const status = (t) => { $g('gordon-mic-status').textContent = t; };
@@ -436,27 +447,16 @@
     }
     // typing switches to text mode: stop listening and speaking (R-13)
     function stopListening() { if (!on) return; on = false; heard = ''; if (rec) rec.abort(); if (synth) synth.cancel(); }
+    // his voice lives in js/gordon-voice.js: a free AI British voice (Kokoro) with built-in voices as backup
     function speak(text) {
-      if (!on || !soundOn || !synth) return;
-      synth.cancel();
-      utter = new SpeechSynthesisUtterance(text);
-      utter.lang = lang();
-      // only voices built into the computer (localService), so his replies aren't sent to an online voice
-      const pre = L.lang === 'fr' ? /^fr/i : /^en/i;
-      const voices = synth.getVoices().filter(v => v.localService && pre.test(v.lang));
-      const male = L.lang === 'fr' ? /thomas|nicolas|daniel|paul|henri|male/i : /male|daniel|george|guy|david|mark/i;
-      const v = voices.find(v => /CA/i.test(v.lang) && male.test(v.name)) || voices.find(v => male.test(v.name)) || voices.find(v => /CA/i.test(v.lang)) || voices[0];
-      if (!v) { utter = null; return; } // no built-in voice: he answers in text only
-      utter.voice = v;
-      utter.rate = 1.02;
-      utter.onstart = () => Avatar.talk(60000);       // mouth moves for as long as he speaks
-      const mine = utter; // a newer reply cancels this one; only the latest may start listening
-      utter.onend = utter.onerror = () => {
-        if (utter !== mine) return;
-        Avatar.talk(0); utter = null;
-        if (on && g.asking && g.asking !== 'done' && !panel.hidden) start();
-      };
-      synth.speak(utter);
+      if (!on || !soundOn || !window.GordonVoice) return;
+      const mine = utter = {}; // a newer reply cancels this one; only the latest may start listening
+      GordonVoice.speak(text, { lang: L.lang, onstart: () => Avatar.talk(60000) }) // mouth moves for as long as he speaks
+        .then(() => {
+          if (utter !== mine) return;
+          Avatar.talk(0); utter = null;
+          if (on && g.asking && g.asking !== 'done' && !panel.hidden) start();
+        });
     }
     return {
       supported, choose, start, stopListening, speak,
@@ -475,12 +475,15 @@
   })();
   $g('gordon-mic').addEventListener('click', () => {
     if ($g('gordon-mic').getAttribute('aria-pressed') === 'true') return Voice.stopAll(); // Stop
-    if (Voice.speaking()) { window.speechSynthesis.cancel(); return; }               // interrupt him; he listens next
+    if (Voice.speaking()) { GordonVoice.cancel(); return; }               // interrupt him; he listens next
     Voice.choose();
   });
   $g('gordon-sound').addEventListener('click', () => Voice.toggleSound());
 
-  // ---------- Gordon's 3D head and shoulders (falls back to the two stills) ----------
+  // ---------- Gordon the waffle in 3D (js/gordon-waffle.js; falls back to the two stills) ----------
+  // He blinks, looks toward the pointer, moves his mouth and mustache while he talks, and changes
+  // his face to match the chat: listening while the guest types, thinking after they send,
+  // sorry when something can't be booked, a jump when the booking is ready.
   const Avatar = (() => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let three = null, loading = false, running = false, talkUntil = 0, stillTimer = null;
@@ -489,33 +492,31 @@
       if (loading || three) return;
       loading = true;
       try {
-        if (location.protocol === 'file:') throw new Error('3D needs a local server (file:// blocks the model)');
+        if (location.protocol === 'file:') throw new Error('3D needs a local server (file:// blocks modules)');
         const THREE = await import('three');
-        const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+        const { createWaffle } = await import(new URL('js/gordon-waffle.js', document.baseURI).href);
         const view = panel.querySelector('.gordon-view');
-        const w = view.clientWidth || 320, h = view.clientHeight || 220;
+        const w = view.clientWidth || 320, h = view.clientHeight || 200;
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
         renderer.setSize(w, h);
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         const scene = new THREE.Scene();
-        // Head and shoulders: he faces +X, head at about y = 2.35
-        const camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 20);
-        camera.position.set(1.75, 2.36, 0.32);
-        camera.lookAt(0, 2.34, 0);
+        const waffle = createWaffle(THREE);
+        waffle.setReducedMotion(reduce);
+        scene.add(waffle.object);
+        // whole body in view, with room above for his hops
+        const top = 1.75, mid = (waffle.FLOOR + top) / 2;
+        const camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 50);
+        camera.position.set(0, mid + 0.25, 7.6);
+        camera.lookAt(0, mid, 0);
         scene.add(new THREE.HemisphereLight(0xfff6ea, 0x4a1418, 1.6));
-        const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(2, 3, 1.5); scene.add(key);
-        const fill = new THREE.DirectionalLight(0xffffff, 0.8); fill.position.set(1, 2, -2); scene.add(fill);
-        const gltf = await new GLTFLoader().loadAsync('models/gordon.glb');
-        scene.add(gltf.scene);
-        const mixer = new THREE.AnimationMixer(gltf.scene);
-        const clip = (n) => gltf.animations.find(a => a.name === n);
-        const actions = {};
-        ['talk', 'nod', 'idle'].forEach(n => { if (clip(n)) actions[n] = mixer.clipAction(clip(n)); });
-        if (actions.idle && !reduce) actions.idle.play();
+        const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(2, 3, 4); scene.add(key);
+        const fill = new THREE.DirectionalLight(0xffffff, 0.7); fill.position.set(-3, 1, 2); scene.add(fill);
         view.innerHTML = '';
         view.append(renderer.domElement);
-        three = { renderer, scene, camera, mixer, actions, clock: new THREE.Clock() };
+        three = { renderer, scene, camera, waffle, clock: new THREE.Clock() };
+        watchChat();
         if (running) loop();
       } catch (e) {
         console.info('Gordon is using his still images:', e.message);
@@ -523,17 +524,46 @@
     }
     function loop() {
       if (!three || !running) return;
-      const { renderer, scene, camera, mixer, actions, clock } = three;
-      const dt = clock.getDelta();
-      const talking = performance.now() < talkUntil;
-      if (actions.talk) {
-        if (talking && !reduce && !actions.talk.isRunning()) actions.talk.reset().play();
-        if (!talking && actions.talk.isRunning()) actions.talk.fadeOut(0.15);
-      }
-      mixer.update(dt);
+      const { renderer, scene, camera, waffle, clock } = three;
+      waffle.setTalking(performance.now() < talkUntil);
+      waffle.update(clock.getDelta());
       renderer.render(scene, camera);
       requestAnimationFrame(loop);
     }
+
+    // his eyes follow the pointer while it is near the panel
+    window.addEventListener('pointermove', (ev) => {
+      if (!three) return;
+      const r = three.renderer.domElement.getBoundingClientRect();
+      const dx = (ev.clientX - (r.left + r.width / 2)) / 300, dy = -(ev.clientY - (r.top + r.height * 0.4)) / 300;
+      three.waffle.lookAt(Math.abs(dx) < 2.5 && Math.abs(dy) < 2.5 ? dx : null, dy);
+    });
+
+    // mood from what is said in the chat (English and French)
+    const SORRY = /(sorry|can't|cannot|unfortunately|closed|fully booked|too short|passed|up to 8|or fewer instead|jusqu'à 8|désolé|ne peux|complets?\b|fermé|trop court|déjà passé)/i;
+    const DONE = /(booking it now|je réserve maintenant|confirmed|confirmée)/i;
+    const WOW = /(good news|bonne nouvelle|here's your booking|voici votre réservation|!\s*$)/i;
+    function feel(who, text) {
+      if (!three) return;
+      const g = three.waffle;
+      if (who === 'guest') { g.setMood('thinking', 900); return; }
+      if (DONE.test(text)) g.celebrate();
+      else if (SORRY.test(text)) g.setMood('sorry', 3500);
+      else if (WOW.test(text)) { g.setMood('excited', 1800); g.hop(); }
+      else if (/\?\s*$/.test(text)) g.setMood('listening', 4000);
+      else g.setMood('happy', 0);
+    }
+    function watchChat() {
+      const log = $g('gordon-log');
+      if (!log) return;
+      new MutationObserver(list => list.forEach(m => m.addedNodes.forEach(n => {
+        if (n.nodeType !== 1 || !n.classList.contains('gordon-line')) return;
+        feel(n.classList.contains('from-guest') ? 'guest' : 'gordon', n.textContent);
+      }))).observe(log, { childList: true });
+      const box = $g('gordon-text');
+      if (box) box.addEventListener('input', () => three && three.waffle.mood !== 'sorry' && three.waffle.setMood('listening', 1500));
+    }
+
     return {
       start() { running = true; load(); if (three) { three.clock.getDelta(); loop(); } },
       stop() { running = false; },
@@ -551,11 +581,8 @@
           if (performance.now() >= talkUntil) { clearInterval(stillTimer); img.src = 'images/gordon-closed.png'; }
         }, 160);
       },
-      nod() {
-        if (!three || reduce || !three.actions.nod) return;
-        const a = three.actions.nod;
-        if (!a.isRunning()) { a.reset(); a.setLoop(2200, 1); a.clampWhenFinished = false; a.play(); }
-      },
+      nod() { if (three) three.waffle.nod(); },
+      mood(name, ms) { if (three) three.waffle.setMood(name, ms); },
     };
   })();
 
