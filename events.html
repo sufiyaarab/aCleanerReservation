@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Private events · Craves &amp; Crumble</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <a class="logo" href="index.html"><img src="images/logo.png" alt="Craves &amp; Crumble"></a>
+    <div class="links">
+      <a href="menu.html">Menu</a>
+      <a href="hours.html">Hours &amp; locations</a>
+      <a href="events.html" aria-current="page">Private events</a>
+    </div>
+    <button class="btn btn-primary" data-open-locations>Reserve</button>
+  </nav>
+
+  <main class="events-page">
+    <section class="page-hero">
+      <img src="images/photo-3-brunch-table.png" alt="Brunch table with poached eggs, grain bowls and coffee">
+      <div>
+        <h1>Private events and large groups</h1>
+        <p class="lede">Birthdays, showers, team brunches and family get-togethers. For groups of 9 or more, send us a request and we'll plan it with you.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="#request">Request an event</a>
+          <span class="help">For 8 or fewer, <a href="booking.html">book online</a>.</span>
+        </div>
+      </div>
+    </section>
+
+    <h2>Ways to host</h2>
+    <ul class="event-options">
+      <li>
+        <h3>Group table</h3>
+        <p>9 to 16 guests at joined tables in the dining room, during regular brunch hours.</p>
+      </li>
+      <li>
+        <h3>Semi-private brunch</h3>
+        <p>17 to 30 guests in a reserved section of the dining room, with a set brunch menu.</p>
+      </li>
+      <li>
+        <h3>Full buyout</h3>
+        <p>The whole restaurant for your group, up to 60 guests, with a menu planned with our chef.</p>
+      </li>
+    </ul>
+    <p class="help">Please send your request at least 48 hours ahead. An 18% gratuity is added for parties of 6 or more. Every dietary need can be planned with the kitchen.</p>
+
+    <hr>
+    <section id="request" aria-labelledby="request-title">
+      <h2 id="request-title">Request an event</h2>
+      <form class="event-form" id="event-form" novalidate>
+        <fieldset>
+          <legend>Location</legend>
+          <div class="radio-row">
+            <label><input type="radio" name="ev-loc" value="Oshawa" checked> Oshawa</label>
+            <label><input type="radio" name="ev-loc" value="Toronto"> Toronto</label>
+          </div>
+        </fieldset>
+        <div class="field-row">
+          <label class="field" id="ev-date-field">Date <input type="date" id="ev-date" required>
+            <span class="help error-text" id="ev-date-error" hidden></span>
+          </label>
+          <label class="field" id="ev-guests-field">Number of guests <input type="number" id="ev-guests" min="9" max="60" value="12" required>
+            <span class="help error-text" id="ev-guests-error" hidden></span>
+          </label>
+          <label class="field">Occasion
+            <select id="ev-type">
+              <option>Birthday</option><option>Baby or bridal shower</option><option>Team brunch</option>
+              <option>Family gathering</option><option>Other</option>
+            </select>
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field" id="ev-name-field">Full name <input id="ev-name" autocomplete="name" required>
+            <span class="help error-text" id="ev-name-error" hidden>Enter your name</span>
+          </label>
+          <label class="field" id="ev-email-field">Email <input id="ev-email" type="email" autocomplete="email" required>
+            <span class="help error-text" id="ev-email-error" hidden>Enter an email, like name@example.com</span>
+          </label>
+          <label class="field">Phone (optional) <input id="ev-phone" type="tel" autocomplete="tel" placeholder="905-555-0100"></label>
+        </div>
+        <label class="field">Anything we should know?
+          <textarea id="ev-notes" rows="3" placeholder="Celebrating a birthday, high chair needed"></textarea>
+        </label>
+        <button class="btn btn-primary">Send request</button>
+        <p class="help">Prefer email? Write to <a href="mailto:groups@cravesandcrumble.com">groups@cravesandcrumble.com</a>.</p>
+      </form>
+
+      <div class="notice" id="ev-done" hidden tabindex="-1">
+        <h3 id="ev-done-title">Request sent</h3>
+        <p id="ev-done-line"></p>
+        <p><button type="button" class="link-btn" id="ev-again">Send another request</button></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/assist.js"></script>
+</body>
+</html>

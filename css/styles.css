@@ -191,3 +191,63 @@ dialog::backdrop { background: rgba(74, 20, 24, .45); }
 }
 /* phones: the panel covers the bottom of the screen, so let the page scroll up past it */
 @media (max-width: 700px) { body.gordon-open { padding-bottom: 62vh; } }
+
+/* ---------- Menu, Hours & locations, Private events pages ---------- */
+.nav .links a[aria-current="page"] { font-weight: bold; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.page-hero { display: grid; grid-template-columns: 2fr 3fr; gap: 32px; align-items: center; margin-bottom: 32px; }
+.page-hero img { width: 100%; height: 300px; object-fit: cover; }
+.page-hero h1 { margin-top: 0; }
+.lede { font-size: 18px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+
+/* Menu */
+.menu-filter { border: 0; padding: 0; margin: 0; }
+.menu-filter legend { padding: 0; font-weight: bold; }
+.menu-section { border-top: 1px solid var(--tan); padding-top: 4px; margin-top: 24px; }
+.menu-section h2 { margin: 12px 0; }
+.menu-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 40px; }
+.menu-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; align-items: baseline; align-content: start; }
+.menu-item[hidden] { display: none; }
+.menu-item h3 { margin: 0; font-size: 19px; }
+.menu-item .price { font-weight: bold; }
+.menu-item p { margin: 0; grid-column: 1 / -1; }
+.menu-item .tags { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.tag { font-size: 13px; border: 1px solid var(--maroon); border-radius: 4px; padding: 0 6px; text-decoration: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.menu-empty[hidden] { display: none; }
+
+/* Hours & locations */
+.loc-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.loc-card h2 { margin: 0 0 4px; }
+.loc-card address { font-style: normal; }
+.hours-table { border-collapse: collapse; margin: 12px 0; min-width: 280px; }
+.hours-table th, .hours-table td { text-align: left; padding: 6px 24px 6px 0; border-bottom: 1px solid var(--tan); font-weight: normal; }
+.hours-table tr.today th, .hours-table tr.today td { font-weight: bold; }
+.hours-table tr.today th { border-left: 4px solid var(--burgundy); padding-left: 8px; }
+.open-status { font-weight: bold; }
+.good-to-know { columns: 2; column-gap: 40px; padding-left: 20px; }
+.good-to-know li { break-inside: avoid; margin-bottom: 8px; }
+
+/* Private events */
+.event-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; list-style: none; padding: 0; }
+.event-options li { border-top: 4px solid var(--burgundy); padding-top: 8px; }
+.event-options h3 { margin: 4px 0; }
+.event-form .field { max-width: 360px; }
+.event-form fieldset { border: 0; padding: 0; margin: 12px 0; }
+.event-form legend { padding: 0; }
+.radio-row { display: flex; gap: 24px; flex-wrap: wrap; }
+.radio-row label { display: flex; gap: 6px; align-items: center; }
+.field .error-text[hidden] { display: none; }
+
+/* Footer on every page (keeps the page links reachable on phones, where the nav links are hidden) */
+.site-footer { border-top: 1px solid var(--tan); margin-top: 32px; padding: 16px 32px 112px; }
+.site-footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; max-width: 1200px; margin: 0 auto; }
+.site-footer a[aria-current="page"] { font-weight: bold; }
+
+@media (max-width: 760px) {
+  .page-hero, .loc-cards, .event-options { grid-template-columns: 1fr; }
+  .page-hero img { height: 200px; }
+  .menu-list { grid-template-columns: 1fr; }
+  .good-to-know { columns: 1; }
+  .site-footer { padding: 16px 16px 104px; }
+}

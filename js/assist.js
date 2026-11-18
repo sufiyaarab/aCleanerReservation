@@ -9,7 +9,10 @@
 //   On the other pages Gordon's bubble opens a smaller help panel built here.
 (function () {
   const lang = () => (typeof I18N !== 'undefined' ? I18N.lang : 'en');
-  const page = document.querySelector('main.booking') ? 'booking' : document.querySelector('main.confirm') ? 'confirmed' : 'home';
+  const page = document.querySelector('main.booking') ? 'booking' : document.querySelector('main.confirm') ? 'confirmed'
+    : document.querySelector('main.menu-page') ? 'menu' : document.querySelector('main.hours-page') ? 'hours'
+    : document.querySelector('main.events-page') ? 'events' : 'home';
+  const synth = window.speechSynthesis;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------- words, in English and French ----------
@@ -25,16 +28,17 @@
       noRec: 'Voice commands need Chrome or Edge. Every button still works with the keyboard.',
       noVoice: 'This computer has no built-in voice, so I will show everything as text instead.',
       stopped: 'Stopped.',
-      voiceLoading: "Warming up my proper British voice. It's a free AI voice that runs on your computer, about 90 MB the first time. My understudy will cover until then.",
-      voiceReady: 'Right, the real voice is ready. Much better.',
       readStart: 'Reading the page. Press Stop at any time.',
-      reading: 'Reading', readDone: "That's the end of the page. Riveting stuff.",
+      reading: 'Reading', readDone: 'That is the end of the page.',
       step: (i, n) => `Step ${i} of ${n}`, guideDone: 'That was the last step. Press Exit guide when you are ready.',
-      welcome: "Hello! Welcome to Craves & Crumble. I'm Gordon, your accessibility assistant, and frankly the best-dressed waffle in Ontario. I can read this page to you, guide you step by step, or book a table with you.",
+      welcome: "Hello! Welcome to Craves & Crumble. I'm Gordon, your accessibility assistant. I can read this page to you, guide you step by step, or book a table with you.",
       helpText: {
         home: 'To book, press Reserve a table, pick Oshawa or Toronto, then press Continue to booking. Or press Book a table with Gordon and we can do it together. Read page reads this page aloud, Guide me shows the steps one at a time, and Stop stops me talking.',
         booking: 'Tell me what you want in your own words, for example "4 people Sunday at 11", and I fill in the form for you. You can also fill it in yourself. Read page reads this page aloud, Guide me shows the steps one at a time, and Stop stops me talking. While Talk is on, you can say "Read page", "Guide me" or "Stop reading".',
         confirmed: 'Your table is booked. Read page reads your booking details aloud. To change or cancel, call the restaurant at least 4 hours ahead.',
+        menu: 'This is our brunch menu, the same at both locations. Press Vegetarian, Gluten-free, Dairy-free, Nut-free or Shellfish-free to see only the dishes that fit. Read page reads the menu aloud, and Guide me shows the steps one at a time.',
+        hours: 'Both locations are open Tuesday to Sunday, 9 am to 1:30 pm, and closed Mondays. Each location shows its address, phone number and hours. Press Reserve at Oshawa or Reserve at Toronto to book, or Get directions for a map.',
+        events: 'For groups of 9 or more, fill in the request form: location, date, number of guests, your name and email, then press Send request. For 8 or fewer, book a table online instead.',
       },
       guides: {
         home: [
@@ -56,6 +60,23 @@
           ['Press Get directions to find the restaurant.', '#directions'],
           ['To change or cancel, call the restaurant at least 4 hours ahead.', '#loc-phone'],
         ],
+        menu: [
+          ['Pick any dietary filters to see only the dishes that fit.', '#menu-filter'],
+          ['Look through the dishes. The letters after each one show if it is vegetarian, gluten-free or dairy-free, or has nuts or shellfish.', '#menu'],
+          ['When you are ready, press Reserve a table.', 'main [data-open-locations]'],
+        ],
+        hours: [
+          ['Find the location you want: Oshawa or Toronto.', '.loc-cards'],
+          ['Check the hours. Today is in bold. Both are closed on Mondays.', '.hours-table'],
+          ['Press Get directions for a map, or call the phone number.', '[data-directions]'],
+          ['Press Reserve at Oshawa or Reserve at Toronto to book a table.', '[data-reserve-loc]'],
+        ],
+        events: [
+          ['Read the ways to host to pick the right size for your group.', '.event-options'],
+          ['Choose the location, the date and the number of guests.', '#request .radio-row'],
+          ['Type your name and email so our events team can reply.', '#ev-name-field'],
+          ['Press Send request.', '#event-form .btn-primary'],
+        ],
       },
     },
     fr: {
@@ -69,8 +90,6 @@
       noRec: 'Les commandes vocales demandent Chrome ou Edge. Tous les boutons fonctionnent au clavier.',
       noVoice: "Cet ordinateur n'a pas de voix intégrée, alors j'affiche tout en texte.",
       stopped: 'Arrêté.',
-      voiceLoading: "Je prépare ma voix britannique (voix IA gratuite qui tourne sur votre ordinateur, environ 90 Mo la première fois). En français, j'utilise la voix de votre ordinateur.",
-      voiceReady: 'Ma voix britannique est prête pour l’anglais.',
       readStart: 'Je lis la page. Appuyez sur Arrêter quand vous voulez.',
       reading: 'Lecture', readDone: "C'est la fin de la page.",
       step: (i, n) => `Étape ${i} sur ${n}`, guideDone: "C'était la dernière étape. Appuyez sur Quitter le guide quand vous êtes prêt.",
@@ -79,6 +98,9 @@
         home: 'Pour réserver, appuyez sur Réserver une table, choisissez Oshawa ou Toronto, puis appuyez sur Continuer vers la réservation. Ou appuyez sur Réserver une table avec Gordon et on le fait ensemble. Lire la page lit cette page à voix haute, Guidez-moi montre les étapes une à une, et Arrêter me fait taire.',
         booking: "Dites-moi ce que vous voulez avec vos mots, par exemple « 4 personnes dimanche à 11 h », et je remplis le formulaire pour vous. Vous pouvez aussi le remplir vous-même. Lire la page lit cette page à voix haute, Guidez-moi montre les étapes une à une, et Arrêter me fait taire. Quand Parler est actif, vous pouvez dire « Lire la page », « Guidez-moi » ou « Arrête de lire ».",
         confirmed: 'Votre table est réservée. Lire la page lit les détails à voix haute. Pour modifier ou annuler, appelez le restaurant au moins 4 heures avant.',
+        menu: 'Voici notre menu de brunch, le même aux deux adresses. Appuyez sur Végétarien, Sans gluten, Sans produits laitiers, Sans noix ou Sans fruits de mer pour voir seulement les plats qui conviennent. Lire la page lit le menu à voix haute, et Guidez-moi montre les étapes une à une.',
+        hours: 'Les deux adresses sont ouvertes du mardi au dimanche, de 9 h à 13 h 30, et fermées le lundi. Chaque adresse montre son adresse, son numéro de téléphone et ses heures. Appuyez sur Réserver à Oshawa ou Réserver à Toronto pour réserver, ou sur Itinéraire pour une carte.',
+        events: "Pour les groupes de 9 personnes ou plus, remplissez le formulaire : adresse, date, nombre de personnes, votre nom et votre courriel, puis appuyez sur Envoyer la demande. Pour 8 personnes ou moins, réservez plutôt une table en ligne.",
       },
       guides: {
         home: [
@@ -99,6 +121,23 @@
           ['Appuyez sur Ajouter au calendrier pour ne pas oublier.'],
           ['Appuyez sur Itinéraire pour trouver le restaurant.'],
           ['Pour modifier ou annuler, appelez le restaurant au moins 4 heures avant.'],
+        ],
+        menu: [
+          ['Choisissez des filtres alimentaires pour voir seulement les plats qui conviennent.'],
+          ['Parcourez les plats. Les lettres après chacun indiquent s’il est végétarien, sans gluten ou sans produits laitiers, ou s’il contient des noix ou des fruits de mer.'],
+          ['Quand vous êtes prêt, appuyez sur Réserver une table.'],
+        ],
+        hours: [
+          ['Trouvez l’adresse voulue : Oshawa ou Toronto.'],
+          ['Vérifiez les heures. Aujourd’hui est en gras. Les deux sont fermées le lundi.'],
+          ['Appuyez sur Itinéraire pour une carte, ou appelez le numéro de téléphone.'],
+          ['Appuyez sur Réserver à Oshawa ou Réserver à Toronto pour réserver une table.'],
+        ],
+        events: [
+          ['Lisez les formules pour choisir celle qui convient à votre groupe.'],
+          ['Choisissez l’adresse, la date et le nombre de personnes.'],
+          ['Tapez votre nom et votre courriel pour que notre équipe puisse vous répondre.'],
+          ['Appuyez sur Envoyer la demande.'],
         ],
       },
     },
@@ -189,30 +228,33 @@
     stillTimer = setInterval(() => { open = !open; img.src = open ? 'images/gordon-open.png' : 'images/gordon-closed.png'; }, 160);
   }
 
-  // His voice is in js/gordon-voice.js: a free AI British voice (Kokoro, run in the browser),
-  // with the computer's built-in voices while it loads or if it can't run.
-  let current = null;      // the line playing now
+  let current = null;      // the utterance playing now
   let warnedNoVoice = false;
-  const voice = () => !!window.GordonVoice && GordonVoice.available(lang());
+  function voice() {
+    if (!synth) return null;
+    const pre = lang() === 'fr' ? /^fr/i : /^en/i;
+    const voices = synth.getVoices().filter(v => v.localService && pre.test(v.lang));
+    const male = lang() === 'fr' ? /thomas|nicolas|daniel|paul|henri|male/i : /male|daniel|george|guy|david|mark/i;
+    return voices.find(v => /CA/i.test(v.lang) && male.test(v.name)) || voices.find(v => male.test(v.name)) || voices.find(v => /CA/i.test(v.lang)) || voices[0] || null;
+  }
   // Says one piece of text. Resolves true when it finished, false when it was stopped or couldn't play.
   function speak(text) {
-    if (!voice()) {
-      if (!warnedNoVoice) { warnedNoVoice = true; caption(t().noVoice); }
-      return Promise.resolve(false);
-    }
-    const mine = current = {};
-    return GordonVoice.speak(text, { lang: lang(), onstart: () => mouth(true) }).then(ok => {
+    return new Promise(resolve => {
+      const v = voice();
+      if (!v) {
+        if (!warnedNoVoice) { warnedNoVoice = true; caption(t().noVoice); }
+        return resolve(false);
+      }
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = v; u.lang = v.lang; u.rate = 1;
+      current = u;
+      u.onstart = () => mouth(true);
       // if something else cut in (Stop, or Gordon answering), this counts as stopped
-      if (current === mine) { current = null; mouth(false); }
-      return ok;
+      u.onend = u.onerror = (e) => { const mine = current === u; if (mine) { current = null; mouth(false); } resolve(mine && e.type === 'end'); };
+      synth.speak(u);
     });
   }
-  // Tell the guest once when the AI voice starts loading and when it's ready (visibility of system status).
-  window.addEventListener('gordonvoice', (e) => {
-    if (e.detail.pct != null) return;
-    if (e.detail.state === 'loading') caption(t().voiceLoading);
-    if (e.detail.state === 'ready') caption(t().voiceReady);
-  });
   // What the buttons use: show it, then say it.
   function tell(text) { caption(text); return speak(text); }
 
@@ -222,7 +264,7 @@
   function stop(quiet) {
     readRun++;
     current = null;
-    if (window.GordonVoice) GordonVoice.cancel();
+    if (synth) synth.cancel();
     mouth(false);
     clearReading();
     if (!quiet) caption(t().stopped);
