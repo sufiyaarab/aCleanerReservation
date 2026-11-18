@@ -11,9 +11,9 @@
   <nav class="nav">
     <a class="logo" href="index.html"><img src="images/logo.png" alt="Craves &amp; Crumble"></a>
     <div class="links">
-      <a href="#">Menu</a>
-      <a href="#">Hours &amp; locations</a>
-      <a href="#">Private events</a>
+      <a href="menu.html">Menu</a>
+      <a href="hours.html">Hours &amp; locations</a>
+      <a href="events.html">Private events</a>
     </div>
     <a class="btn btn-primary" href="index.html">Reserve</a>
   </nav>
@@ -25,7 +25,7 @@
       <p id="conf-line"></p>
       <dl class="review-list" id="details"></dl>
       <hr>
-      <button type="button" class="btn">Add to calendar</button>
+      <button type="button" class="btn" id="add-cal">Add to calendar</button>
       <button type="button" class="btn" id="directions">Get directions</button>
       <p class="help" id="grat-note"></p>
       <p class="help">Need to change or cancel? Please let us know at least 4 hours ahead by calling <span id="loc-phone"></span>. Tables are held for 15 minutes past your booking time, then released to walk-in guests.</p>
@@ -58,6 +58,26 @@
         ['Location', `${b.location}, ${LOCATIONS[b.location].address}`], ['Date', date], ['Time', b.time], ['Party size', b.party],
         ['Seating', b.table], ['Dietary needs', diet],
       ];
+      // Get directions: Google Maps to the booked location
+      document.getElementById('directions').addEventListener('click', () => window.open(directionsUrl(b.location), '_blank', 'noopener'));
+      // Add to calendar: downloads a .ics file that Google, Apple and Outlook calendars all open
+      document.getElementById('add-cal').addEventListener('click', () => {
+        const m = /^(\d{1,2}):(\d{2}) (am|pm)$/.exec(b.time) || [0, '11', '00', 'am'];
+        const h = (Number(m[1]) % 12) + (m[3] === 'pm' ? 12 : 0);
+        const ymd = b.date.replace(/-/g, '');
+        const t = (hh, mm) => `${ymd}T${String(hh).padStart(2, '0')}${String(mm).padStart(2, '0')}00`;
+        const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Craves and Crumble//Reservation//EN', 'BEGIN:VEVENT',
+          `UID:${conf}@cravesandcrumble.com`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
+          `DTSTART:${t(h, m[2])}`, `DTEND:${t(h + 1, m[2])}`,
+          `SUMMARY:Brunch at Craves & Crumble (${b.location})`,
+          `LOCATION:${LOCATIONS[b.location].address.replace(/,/g, '\\,')}`,
+          `DESCRIPTION:Party of ${b.party}. Confirmation #${conf}. To change or cancel call ${LOCATIONS[b.location].phone}.`,
+          'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+        a.download = 'craves-and-crumble-reservation.ics';
+        document.body.append(a); a.click(); a.remove();
+      });
       document.getElementById('details').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd><span></span>`).join('');
     })();
   </script>

@@ -124,3 +124,67 @@ async function saveBooking(b) {
 async function loadBooking() {
   try { return BookingVault.ok() ? await BookingVault.load() : null; } catch (e) { return null; }
 }
+
+// ---------- Site links (every page) ----------
+// The page links at the bottom of every page. On phones the nav hides Menu / Hours / Private events,
+// so this footer is how guests reach them there.
+const PAGES = [
+  ['index.html', 'Home'], ['menu.html', 'Menu'], ['hours.html', 'Hours & locations'],
+  ['events.html', 'Private events'], ['booking.html', 'Reserve'],
+];
+(function () {
+  const here = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  const main = document.querySelector('main');
+  if (!main) return;
+  const footer = document.createElement('footer');
+  footer.className = 'site-footer';
+  footer.innerHTML = `<nav aria-label="Site pages">${PAGES.map(([href, label]) =>
+    `<a href="${href}"${href === here ? ' aria-current="page"' : ''}>${esc(label)}</a>`).join('')}</nav>`;
+  main.after(footer);
+})();
+
+// ---------- Reserve from any page (F02 Choose location) ----------
+// Pages with a [data-open-locations] button get the same "Which location?" pop-up as the home page.
+// A [data-reserve-loc="Oshawa"] button skips the pop-up and goes straight to booking for that location.
+// The home page builds its own pop-up, so nothing is added there.
+(function () {
+  document.querySelectorAll('[data-reserve-loc]').forEach(b => b.addEventListener('click', () => {
+    const loc = b.getAttribute('data-reserve-loc');
+    setLocation(loc);
+    location.href = 'booking.html?loc=' + encodeURIComponent(loc);
+  }));
+  const openers = document.querySelectorAll('[data-open-locations]');
+  if (!openers.length || document.getElementById('locations')) return;
+  const dlg = document.createElement('dialog');
+  dlg.id = 'locations';
+  dlg.setAttribute('aria-labelledby', 'loc-title');
+  dlg.innerHTML = `
+    <form method="dialog" id="loc-form">
+      <div class="dialog-head">
+        <h2 id="loc-title">Which location?</h2>
+        <button class="link-btn" value="cancel" formnovalidate>Close</button>
+      </div>
+      ${Object.keys(LOCATIONS).map(k => `
+      <label class="loc-option">
+        <input type="radio" name="loc" value="${k}">
+        <span><strong>${esc(LOCATIONS[k].city)}</strong><br>${esc(LOCATIONS[k].address.split(',')[0])} · Tue to Sun 9 am to 1:30 pm</span>
+      </label>`).join('')}
+      <p><button type="button" class="btn btn-primary" id="loc-continue" disabled>Continue to booking</button></p>
+    </form>`;
+  document.body.append(dlg);
+  const cont = dlg.querySelector('#loc-continue');
+  openers.forEach(b => b.addEventListener('click', () => dlg.showModal()));
+  dlg.addEventListener('change', () => { cont.disabled = false; });
+  const remembered = getLocation();
+  if (remembered) { dlg.querySelector(`input[value="${remembered}"]`).checked = true; cont.disabled = false; }
+  cont.addEventListener('click', () => {
+    const loc = dlg.querySelector('input[name=loc]:checked').value;
+    setLocation(loc);
+    location.href = 'booking.html?loc=' + encodeURIComponent(loc);
+  });
+})();
+
+// Google Maps directions to a location (opens in a new tab).
+function directionsUrl(loc) {
+  return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(LOCATIONS[loc].address);
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hours &amp; locations · Craves &amp; Crumble</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <a class="logo" href="index.html"><img src="images/logo.png" alt="Craves &amp; Crumble"></a>
+    <div class="links">
+      <a href="menu.html">Menu</a>
+      <a href="hours.html" aria-current="page">Hours &amp; locations</a>
+      <a href="events.html">Private events</a>
+    </div>
+    <button class="btn btn-primary" data-open-locations>Reserve</button>
+  </nav>
+
+  <main class="hours-page">
+    <section class="page-hero">
+      <img src="images/photo-1-dining-room.png" alt="Dining room with bar stools and window tables">
+      <div>
+        <h1>Hours and locations</h1>
+        <p class="lede">Two locations, same waffles. Both are open Tuesday to Sunday, 9 am to 1:30 pm, and closed Mondays.</p>
+      </div>
+    </section>
+
+    <div class="loc-cards">
+      <section class="loc-card" id="loc-oshawa" aria-labelledby="h-Oshawa">
+        <h2 id="h-Oshawa">Oshawa</h2>
+        <p class="open-status" data-status="Oshawa" aria-live="polite"></p>
+        <address data-address="Oshawa"></address>
+        <p><a data-phone="Oshawa"></a></p>
+        <table class="hours-table">
+          <caption class="sr-only">Opening hours</caption>
+          <tbody>
+            <tr data-day="2"><th scope="row">Tuesday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="3"><th scope="row">Wednesday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="4"><th scope="row">Thursday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="5"><th scope="row">Friday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="6"><th scope="row">Saturday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="0"><th scope="row">Sunday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="1"><th scope="row">Monday</th><td>Closed</td></tr>
+          </tbody>
+        </table>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" data-reserve-loc="Oshawa">Reserve at Oshawa</button>
+          <a class="btn" data-directions="Oshawa" target="_blank" rel="noopener">Get directions</a>
+        </div>
+      </section>
+      <section class="loc-card" id="loc-toronto" aria-labelledby="h-Toronto">
+        <h2 id="h-Toronto">Toronto</h2>
+        <p class="open-status" data-status="Toronto" aria-live="polite"></p>
+        <address data-address="Toronto"></address>
+        <p><a data-phone="Toronto"></a></p>
+        <table class="hours-table">
+          <caption class="sr-only">Opening hours</caption>
+          <tbody>
+            <tr data-day="2"><th scope="row">Tuesday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="3"><th scope="row">Wednesday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="4"><th scope="row">Thursday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="5"><th scope="row">Friday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="6"><th scope="row">Saturday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="0"><th scope="row">Sunday</th><td>9:00 am to 1:30 pm</td></tr>
+            <tr data-day="1"><th scope="row">Monday</th><td>Closed</td></tr>
+          </tbody>
+        </table>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" data-reserve-loc="Toronto">Reserve at Toronto</button>
+          <a class="btn" data-directions="Toronto" target="_blank" rel="noopener">Get directions</a>
+        </div>
+      </section>
+    </div>
+
+    <hr>
+    <h2>Good to know</h2>
+    <ul class="good-to-know">
+      <li>Walk-ins are welcome at the bar.</li>
+      <li>Book 1 to 8 guests online. Tables are held for 15 minutes past your booking time, then released to walk-in guests.</li>
+      <li>Need to change or cancel? Call the location at least 4 hours ahead.</li>
+      <li>An 18% gratuity is added for parties of 6 or more.</li>
+      <li>Groups of 9 or more: see <a href="events.html">Private events</a>.</li>
+      <li>See what we serve on the <a href="menu.html">menu</a>.</li>
+    </ul>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/hours.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/assist.js"></script>
+</body>
+</html>

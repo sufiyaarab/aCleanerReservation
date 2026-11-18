@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Menu · Craves &amp; Crumble</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="nav">
+    <a class="logo" href="index.html"><img src="images/logo.png" alt="Craves &amp; Crumble"></a>
+    <div class="links">
+      <a href="menu.html" aria-current="page">Menu</a>
+      <a href="hours.html">Hours &amp; locations</a>
+      <a href="events.html">Private events</a>
+    </div>
+    <button class="btn btn-primary" data-open-locations>Reserve</button>
+  </nav>
+
+  <main class="menu-page">
+    <section class="page-hero">
+      <img src="images/photo-2-waffles.png" alt="Waffles with strawberries, whipped cream and maple syrup">
+      <div>
+        <h1>Brunch menu</h1>
+        <p class="lede">The same menu at both locations, served Tuesday to Sunday, 9 am to 1:30 pm.</p>
+        <div class="actions">
+          <button class="btn btn-primary" data-open-locations>Reserve a table</button>
+          <a href="hours.html">See hours and locations</a>
+        </div>
+      </div>
+    </section>
+
+    <fieldset class="menu-filter">
+      <legend>Show only dishes that are</legend>
+      <div class="chips" id="menu-filter">
+        <button type="button" class="chip" aria-pressed="false" data-tag="V">Vegetarian</button>
+        <button type="button" class="chip" aria-pressed="false" data-tag="GF">Gluten-free</button>
+        <button type="button" class="chip" aria-pressed="false" data-tag="DF">Dairy-free</button>
+        <button type="button" class="chip" aria-pressed="false" data-without="N">Nut-free</button>
+        <button type="button" class="chip" aria-pressed="false" data-without="SF">Shellfish-free</button>
+      </div>
+      <p class="help" id="menu-count" aria-live="polite"></p>
+    </fieldset>
+
+    <div id="menu"></div>
+    <p class="notice menu-empty" id="menu-empty" hidden>No dishes match all of those. Turn off a filter to see more, or tell us your needs when you book and the kitchen will adapt a dish.</p>
+
+    <hr>
+    <div class="legend help" aria-label="What the labels mean">
+      <span><span class="tag">V</span> Vegetarian</span>
+      <span><span class="tag">GF</span> Gluten-free</span>
+      <span><span class="tag">DF</span> Dairy-free</span>
+      <span><span class="tag">N</span> Contains nuts</span>
+      <span><span class="tag">SF</span> Contains shellfish</span>
+    </div>
+    <p class="help">Our kitchen handles nuts, gluten, dairy and shellfish. Add any allergies when you book, in the Dietary needs step, and the kitchen will prepare.</p>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/menu.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/assist.js"></script>
+</body>
+</html>
