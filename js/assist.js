@@ -12,7 +12,6 @@
   const page = document.querySelector('main.booking') ? 'booking' : document.querySelector('main.confirm') ? 'confirmed'
     : document.querySelector('main.menu-page') ? 'menu' : document.querySelector('main.hours-page') ? 'hours'
     : document.querySelector('main.events-page') ? 'events' : 'home';
-  const synth = window.speechSynthesis;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------- words, in English and French ----------
@@ -22,16 +21,27 @@
       prev: 'Previous', next: 'Next', repeat: 'Repeat', exit: 'Exit guide', close: 'Close',
       cmdOn: 'Voice commands', cmdOff: 'Stop listening', book: 'Book a table with Gordon',
       log: 'Messages from Gordon', title: 'Gordon, your assistant',
-      listening: 'Listening. Say "Open help", "Read page", "Guide me" or "Stop reading".',
-      micWhy: 'I only listen for a few commands, and only after you press Voice commands. Your browser will ask to use the microphone.',
+      listening: 'Listening. Try "Book a table", "Read page", "Guide me" or "Stop".',
+      heard: 'You said',
+      notCmd: (x) => `Sorry, "${x}" isn't one I know. Try "book a table", "read page", "guide me" or "help".`,
+      goingBook: "Right, off to booking we go. When the page opens, press Talk and tell me what you're after.",
+      goBook: 'Go to booking',
+      micWhy: 'I only listen after you press Voice commands, and only while the red bar says Listening. I switch the mic off while I talk, so wait for the beep. Your browser will ask to use the microphone.',
       micDenied: 'The microphone is blocked, so voice commands are off. Every button still works with the keyboard.',
       noRec: 'Voice commands need Chrome or Edge. Every button still works with the keyboard.',
       noVoice: 'This computer has no built-in voice, so I will show everything as text instead.',
       stopped: 'Stopped.',
+      voiceLoading: "One moment, warming up my proper British voice. It's a free AI voice that runs on your computer, so the first time it downloads once (90 to 310 MB).",
+      voiceReady: 'Right, my real voice is ready. Much better.',
+      voiceFallback: {
+        file: "You're hearing my understudy, the computer's built-in voice. My real AI voice needs the site to run from a local server, like VS Code Live Server or GitHub Pages, not opened straight from the file.",
+        failed: "You're hearing my understudy, the computer's built-in voice, because my AI voice couldn't load. It needs an internet connection the first time.",
+        slow: "My AI voice is still downloading, so my understudy will cover for a moment.",
+      },
       readStart: 'Reading the page. Press Stop at any time.',
-      reading: 'Reading', readDone: 'That is the end of the page.',
+      reading: 'Reading', readDone: "That's the end of the page. Riveting stuff.",
       step: (i, n) => `Step ${i} of ${n}`, guideDone: 'That was the last step. Press Exit guide when you are ready.',
-      welcome: "Hello! Welcome to Craves & Crumble. I'm Gordon, your accessibility assistant. I can read this page to you, guide you step by step, or book a table with you.",
+      welcome: "Hello! Welcome to Craves & Crumble. I'm Gordon, your accessibility assistant, and frankly the best-dressed waffle in Ontario. I can read this page to you, guide you step by step, or book a table with you. Press Voice commands and say \"book a table\" and I'll take you straight there.",
       helpText: {
         home: 'To book, press Reserve a table, pick Oshawa or Toronto, then press Continue to booking. Or press Book a table with Gordon and we can do it together. Read page reads this page aloud, Guide me shows the steps one at a time, and Stop stops me talking.',
         booking: 'Tell me what you want in your own words, for example "4 people Sunday at 11", and I fill in the form for you. You can also fill it in yourself. Read page reads this page aloud, Guide me shows the steps one at a time, and Stop stops me talking. While Talk is on, you can say "Read page", "Guide me" or "Stop reading".',
@@ -84,12 +94,23 @@
       prev: 'Précédent', next: 'Suivant', repeat: 'Répéter', exit: 'Quitter le guide', close: 'Fermer',
       cmdOn: 'Commandes vocales', cmdOff: "Arrêter l'écoute", book: 'Réserver une table avec Gordon',
       log: 'Messages de Gordon', title: 'Gordon, votre assistant',
-      listening: "J'écoute. Dites « Ouvrir l'aide », « Lire la page », « Guidez-moi » ou « Arrête de lire ».",
-      micWhy: "J'écoute seulement quelques commandes, et seulement après que vous appuyez sur Commandes vocales. Votre navigateur va demander l'accès au micro.",
+      listening: "J'écoute. Dites « Réserver une table », « Lire la page », « Guidez-moi » ou « Arrête ».",
+      heard: 'Vous avez dit',
+      notCmd: (x) => `Désolé, je ne connais pas « ${x} ». Essayez « réserver une table », « lire la page », « guidez-moi » ou « aide ».`,
+      goingBook: 'On y va. Quand la page s’ouvre, appuyez sur Parler et dites-moi ce que vous voulez.',
+      goBook: 'Aller à la réservation',
+      micWhy: "J'écoute seulement après que vous appuyez sur Commandes vocales, et seulement quand la barre rouge dit J'écoute. Le micro se coupe pendant que je parle, attendez le bip. Votre navigateur va demander l'accès au micro.",
       micDenied: 'Le micro est bloqué, donc les commandes vocales sont désactivées. Tous les boutons fonctionnent au clavier.',
       noRec: 'Les commandes vocales demandent Chrome ou Edge. Tous les boutons fonctionnent au clavier.',
       noVoice: "Cet ordinateur n'a pas de voix intégrée, alors j'affiche tout en texte.",
       stopped: 'Arrêté.',
+      voiceLoading: "Un instant, je prépare ma voix britannique (voix IA gratuite qui tourne sur votre ordinateur, téléchargée une seule fois, 90 à 310 Mo). En français, j'utilise la voix de votre ordinateur.",
+      voiceReady: 'Ma voix britannique est prête pour l’anglais.',
+      voiceFallback: {
+        file: "Vous entendez la voix intégrée de l'ordinateur. Ma voix IA demande un serveur local, comme VS Code Live Server ou GitHub Pages.",
+        failed: "Vous entendez la voix intégrée de l'ordinateur, car ma voix IA n'a pas pu se charger.",
+        slow: 'Ma voix IA se télécharge encore, la voix de l’ordinateur prend le relais un instant.',
+      },
       readStart: 'Je lis la page. Appuyez sur Arrêter quand vous voulez.',
       reading: 'Lecture', readDone: "C'est la fin de la page.",
       step: (i, n) => `Étape ${i} sur ${n}`, guideDone: "C'était la dernière étape. Appuyez sur Quitter le guide quand vous êtes prêt.",
@@ -228,33 +249,32 @@
     stillTimer = setInterval(() => { open = !open; img.src = open ? 'images/gordon-open.png' : 'images/gordon-closed.png'; }, 160);
   }
 
-  let current = null;      // the utterance playing now
+  // His voice is in js/gordon-voice.js: a free AI British voice (Kokoro, run in the browser),
+  // with the computer's built-in voices while it loads or if it can't run.
+  let current = null;      // the line playing now
   let warnedNoVoice = false;
-  function voice() {
-    if (!synth) return null;
-    const pre = lang() === 'fr' ? /^fr/i : /^en/i;
-    const voices = synth.getVoices().filter(v => v.localService && pre.test(v.lang));
-    const male = lang() === 'fr' ? /thomas|nicolas|daniel|paul|henri|male/i : /male|daniel|george|guy|david|mark/i;
-    return voices.find(v => /CA/i.test(v.lang) && male.test(v.name)) || voices.find(v => male.test(v.name)) || voices.find(v => /CA/i.test(v.lang)) || voices[0] || null;
-  }
+  const voice = () => !!window.GordonVoice && GordonVoice.available(lang());
   // Says one piece of text. Resolves true when it finished, false when it was stopped or couldn't play.
-  function speak(text) {
-    return new Promise(resolve => {
-      const v = voice();
-      if (!v) {
-        if (!warnedNoVoice) { warnedNoVoice = true; caption(t().noVoice); }
-        return resolve(false);
-      }
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.voice = v; u.lang = v.lang; u.rate = 1;
-      current = u;
-      u.onstart = () => mouth(true);
+  function speak(text, upNext) {
+    if (!voice()) {
+      if (!warnedNoVoice) { warnedNoVoice = true; caption(t().noVoice); }
+      return Promise.resolve(false);
+    }
+    const mine = current = {};
+    const p = GordonVoice.speak(text, { lang: lang(), onstart: () => { mouth(true); if (upNext) GordonVoice.prefetch(upNext, lang()); } });
+    return p.then(ok => {
       // if something else cut in (Stop, or Gordon answering), this counts as stopped
-      u.onend = u.onerror = (e) => { const mine = current === u; if (mine) { current = null; mouth(false); } resolve(mine && e.type === 'end'); };
-      synth.speak(u);
+      if (current === mine) { current = null; mouth(false); }
+      return ok;
     });
   }
+  // Tell the guest once when the AI voice starts loading and when it's ready (visibility of system status).
+  window.addEventListener('gordonvoice', (e) => {
+    if (e.detail.pct != null) return;
+    if (e.detail.state === 'loading') caption(t().voiceLoading);
+    if (e.detail.state === 'ready') caption(t().voiceReady);
+    if (e.detail.state === 'fallback') caption(t().voiceFallback[e.detail.why]);
+  });
   // What the buttons use: show it, then say it.
   function tell(text) { caption(text); return speak(text); }
 
@@ -264,7 +284,7 @@
   function stop(quiet) {
     readRun++;
     current = null;
-    if (synth) synth.cancel();
+    if (window.GordonVoice) GordonVoice.cancel();
     mouth(false);
     clearReading();
     if (!quiet) caption(t().stopped);
@@ -303,13 +323,23 @@
       b.el.classList.add('assist-reading');
       b.el.scrollIntoView({ block: innerWidth <= 700 ? 'start' : 'nearest', behavior: reduce ? 'auto' : 'smooth' });
       line.innerHTML = `<strong>${t().reading}:</strong> ${esc(b.text)}`;
-      const ok = await speak(b.text);
+      const nextB = blocks[blocks.indexOf(b) + 1];
+      const ok = await speak(b.text, nextB && nextB.text); // the next block is made while this one plays
       if (!ok) { if (run === readRun && !voice()) { clearReading(); } return; }
     }
     if (run !== readRun) return;
     clearReading();
     line.remove();
     tell(t().readDone);
+  }
+
+  // ---------- take the guest to booking (voice "book a table", or Next on the home guide's last step) ----------
+  function goBooking() {
+    stop(true); Cmd.stop();
+    caption(t().goingBook);
+    const go = () => { location.href = 'booking.html?gordon=1&talk=1'; };
+    speak(t().goingBook).then(go, go);
+    setTimeout(go, 6000); // don't make them wait for a long sentence
   }
 
   // ---------- Guide me ----------
@@ -323,7 +353,9 @@
     $a('assist-step').textContent = s.text;
     $a('assist-step').lang = lang();
     $a('assist-prev').disabled = gi === 0;
-    $a('assist-next').disabled = gi === steps.length - 1;
+    const lastHome = page === 'home' && gi === steps.length - 1;
+    $a('assist-next').disabled = gi === steps.length - 1 && !lastHome;
+    $a('assist-next').textContent = lastHome ? t().goBook : t().next;
     const target = s.sel && [...document.querySelectorAll(s.sel)].find(visible);
     if (target) {
       target.classList.add('assist-target');
@@ -350,7 +382,7 @@
     if (gi < 0) return openGuide();
     stop(true);
     const n = guideSteps().length;
-    if (d > 0 && gi === n - 1) return caption(t().guideDone);
+    if (d > 0 && gi === n - 1) return page === 'home' ? goBooking() : caption(t().guideDone);
     gi += d;
     showStep();
   }
@@ -381,19 +413,35 @@
     ['repeat', /^(repeat|say that again|again|repete|repeter|repetez)$/],
     ['exit', /^(exit|exit guide|close guide|quit|quitter|quitter le guide|sortir)$/],
     ['speak', /^(speak|hello|say hello|parler|bonjour)$/],
+    ['book', /^(book|book a table|reserve|reserve a table|make a reservation|reserver|reserver une table)$/],
   ];
-  function which(text) {
+  // Off the booking page nobody is giving booking details, so everyday wording counts too:
+  // "I want to book a table for Sunday", "can you read this to me", "how do I do this".
+  const LOOSE = [
+    ['stop', /\b(stop|be quiet|shut up|enough|arrete|silence)\b/],
+    ['book', /\b(book|booking|reserv\w*|table|brunch|reservation)\b/],
+    ['read', /\b(read|lire|lis)\b/],
+    ['guide', /\b(guide|steps?|how do i|walk me|show me|etapes?)\b/],
+    ['next', /\b(next|suivant)\b/],
+    ['prev', /\b(back|previous|precedent|retour)\b/],
+    ['repeat', /\b(repeat|again|repete)\b/],
+    ['exit', /\b(exit|quit|close|quitter|fermer)\b/],
+    ['help', /\b(help|what can you|aide)\b/],
+  ];
+  function which(text, loose) {
     const s = norm(text);
-    const hit = COMMANDS.find(([, re]) => re.test(s));
+    let hit = COMMANDS.find(([, re]) => re.test(s));
+    if (!hit && loose) hit = LOOSE.find(([k, re]) => re.test(s) && !(['next', 'prev', 'repeat', 'exit'].includes(k) && gi < 0));
     if (!hit) return null;
     if (['next', 'prev', 'repeat', 'exit'].includes(hit[0]) && gi < 0) return null; // only while guiding
     return hit[0];
   }
-  function command(text) {
-    const k = which(text);
+  function command(text, loose) {
+    const k = which(text, loose);
     if (!k) return false;
     ({ stop: () => stop(), read: readPage, help: () => $a('assist-help').click(), guide: openGuide,
-       next: () => move(1), prev: () => move(-1), repeat, exit: exitGuide, speak: () => $a('assist-speak').click() })[k]();
+       next: () => move(1), prev: () => move(-1), repeat, exit: exitGuide, speak: () => $a('assist-speak').click(),
+       book: () => (onBooking ? $a('assist-help').click() : goBooking()) })[k]();
     return true;
   }
 
@@ -401,16 +449,24 @@
   // button already listens, and gordon.js passes these phrases here, so the button is hidden there.
   const Cmd = (() => {
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let rec = null, explained = false, local = null;
+    let rec = null, explained = false, local = null, paused = false;
     const api = { on: false, start, stop: stopCmd };
     if (onBooking) { $a('assist-cmd').hidden = true; return api; }
     function label() {
       $a('assist-cmd').textContent = api.on ? t().cmdOff : t().cmdOn;
       $a('assist-cmd').setAttribute('aria-pressed', api.on);
       $a('assist-cmd').classList.toggle('listening', api.on);
-      status.textContent = api.on ? t().listening : '';
+      status.textContent = api.on && !paused ? t().listening : '';
+      if (window.GordonVoice) GordonVoice.mic(api.on && !paused);
     }
     api.label = label;
+    // Half-duplex: the mic is off while Gordon talks, so he never hears (and obeys) his own voice.
+    // Press Stop to cut in; the mic comes back by itself when he finishes.
+    window.addEventListener('gordontalk', (e) => {
+      if (!api.on) return;
+      if (e.detail.talking && !paused) { paused = true; if (rec) rec.abort(); label(); }
+      else if (!e.detail.talking && paused) { paused = false; label(); try { rec.start(); } catch (err) {} }
+    });
     async function start() {
       if (!Rec) return caption(t().noRec);
       if (!explained) { explained = true; caption(t().micWhy); }
@@ -433,17 +489,23 @@
       rec.interimResults = false;
       rec.onresult = (e) => {
         const r = e.results[e.results.length - 1];
-        if (r && r.isFinal !== false) command(r[0].transcript);
+        if (!r || r.isFinal === false || paused) return;
+        const said = r[0].transcript.trim();
+        if (!said) return;
+        const h = caption('', 'assist-heard'); // show what he heard (R-14)
+        h.className = 'gordon-line from-guest assist-heard';
+        h.innerHTML = `<strong>${t().heard}:</strong> ${esc(said)}`;
+        if (!command(said, true)) tell(t().notCmd(said));
       };
       rec.onerror = (e) => {
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') { api.on = false; caption(t().micDenied); label(); }
       };
-      rec.onend = () => { if (api.on) { try { rec.start(); } catch (e) {} } }; // keep listening until Stop listening
+      rec.onend = () => { if (api.on && !paused) { try { rec.start(); } catch (e) {} } }; // keep listening until Stop listening
       api.on = true;
       label();
       try { rec.start(); } catch (e) {}
     }
-    function stopCmd() { if (!api.on) return; api.on = false; if (rec) rec.abort(); label(); }
+    function stopCmd() { if (!api.on) return; api.on = false; paused = false; if (rec) rec.abort(); label(); }
     return api;
   })();
 

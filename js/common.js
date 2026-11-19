@@ -125,6 +125,15 @@ async function loadBooking() {
   try { return BookingVault.ok() ? await BookingVault.load() : null; } catch (e) { return null; }
 }
 
+// Waitlist link beside Reserve on every page (js/waitlist.js, R-4). Pages that need the waitlist
+// numbers straight away (waitlist.html, confirmed.html) load it themselves; the others get it here.
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof Waitlist !== 'undefined' || document.querySelector('script[src="js/waitlist.js"]')) return;
+  const s = document.createElement('script');
+  s.src = 'js/waitlist.js';
+  document.body.append(s);
+});
+
 // ---------- Site links (every page) ----------
 // The page links at the bottom of every page. On phones the nav hides Menu / Hours / Private events,
 // so this footer is how guests reach them there.

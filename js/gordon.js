@@ -175,8 +175,10 @@
     let p = null;
     if (typeof GordonAI !== 'undefined' && GordonAI.enabled) {
       $g('gordon-mic-status').textContent = L.lang === 'fr' ? 'Gordon réfléchit…' : 'Gordon is thinking…';
+      if (window.GordonVoice) GordonVoice.mic('thinking');
       p = await GordonAI.read(text, { today: B.todayISO(), asking: g.asking, lang: L.lang, lastQuestion: g.lastSaid });
       $g('gordon-mic-status').textContent = '';
+      if (window.GordonVoice) GordonVoice.mic(false);
       if (p && !Object.keys(p).length) p = null; // nothing understood: give the built-in parser a go
     }
     if (!p) p = GordonParser.parse(L.lang === 'fr' ? L.toEnglish(text) : text, B.todayISO(), g.asking);
@@ -366,6 +368,7 @@
       micBtn().setAttribute('aria-pressed', v);
       micBtn().classList.toggle('listening', v);
       status(v ? t().listening : '');
+      if (window.GordonVoice) GordonVoice.mic(v); // badge under his picture + beep when it's the guest's turn
     }
     // G02: explain before the browser's permission pop-up
     // Privacy: use speech recognition ON THIS DEVICE when the browser can (newer Chrome and Edge),
@@ -590,4 +593,7 @@
 
   // Opened from another page's bubble (booking.html?gordon=1): the guest already clicked him
   if (new URLSearchParams(location.search).get('gordon') === '1') open();
+  // Sent here by voice from another page ("book a table"): point at Talk, one press and he's listening.
+  // (Browsers don't let a new page start the mic or sound by itself.)
+  if (new URLSearchParams(location.search).get('talk') === '1' && Voice.supported) { $g('gordon-mic').classList.add('pulse'); $g('gordon-mic').focus(); $g('gordon-mic').addEventListener('click', () => $g('gordon-mic').classList.remove('pulse'), { once: true }); }
 })();

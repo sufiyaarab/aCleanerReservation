@@ -192,6 +192,97 @@ dialog::backdrop { background: rgba(74, 20, 24, .45); }
 /* phones: the panel covers the bottom of the screen, so let the page scroll up past it */
 @media (max-width: 700px) { body.gordon-open { padding-bottom: 62vh; } }
 
+/* ---------- whose turn it is (js/gordon-voice.js) ---------- */
+.voice-turn { margin: 0; padding: 8px 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--tan); }
+.voice-turn[hidden] { display: none; }
+.voice-turn::before { content: ''; width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.voice-turn.is-listening { background: var(--burgundy); color: var(--ivory); }
+.voice-turn.is-listening::before { background: var(--ivory); animation: turn-pulse 1s ease-in-out infinite; }
+.voice-turn.is-talking { background: var(--tan); color: var(--maroon); }
+.voice-turn.is-talking::before { background: var(--maroon); border-radius: 2px; width: 10px; height: 10px; }
+.voice-turn.is-thinking { background: var(--ivory); color: var(--maroon); }
+.voice-turn.is-thinking::before { border: 2px solid var(--maroon); width: 8px; height: 8px; }
+@keyframes turn-pulse { 50% { transform: scale(0.6); opacity: 0.5; } }
+.assist-heard { font-style: italic; }
+#gordon-mic.pulse { outline: 3px solid var(--burgundy); outline-offset: 2px; animation: turn-pulse-btn 1.2s ease-in-out infinite; }
+@keyframes turn-pulse-btn { 50% { outline-offset: 6px; } }
+@media (prefers-reduced-motion: reduce) { .voice-turn.is-listening::before, #gordon-mic.pulse { animation: none; } }
+
+/* ---------- Gordon usability heuristics (js/gordon-ux.js) ---------- */
+/* Status: an "is-ready" and "is-loading" state next to the voice states */
+.voice-turn.is-ready { background: var(--ivory); color: var(--maroon); font-weight: 600; }
+.voice-turn.is-ready::before { background: var(--burgundy); }
+.voice-turn.is-loading { background: var(--ivory); color: var(--maroon); font-weight: 600; }
+.voice-turn.is-loading::before { border: 2px solid var(--maroon); border-top-color: transparent; width: 8px; height: 8px; animation: gordon-spin 0.9s linear infinite; }
+@keyframes gordon-spin { to { transform: rotate(360deg); } }
+.gordon-view { position: relative; }
+.gordon-loading { position: absolute; left: 0; right: 0; bottom: 6px; margin: 0; text-align: center; font-size: 14px; }
+
+/* Proximity: picture, status and booking-so-far read as one card */
+.gordon-panel .gordon-view, .gordon-panel .voice-turn, .gordon-progress { margin-top: 0; margin-bottom: 0; }
+.gordon-panel { gap: 8px; }
+.gordon-panel .voice-turn { margin-top: -8px; }
+.gordon-progress { margin-top: -8px; padding: 6px 12px 8px; border-bottom: 1px solid var(--tan); }
+.gordon-progress-title { margin: 0 0 4px; font-size: 13px; font-weight: 700; }
+.gordon-progress ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 6px; font-size: 13px; }
+.gordon-progress li { padding: 2px 8px; border-radius: 4px; border: 1px solid var(--maroon); }
+.gordon-progress li.todo { border-style: dashed; opacity: 0.75; }
+.gordon-progress li.done { background: var(--tan); }
+.gordon-progress .k { font-weight: 700; }
+
+/* Similarity: every Gordon line looks the same, every guest line looks the same */
+.gordon-line.from-gordon { background: var(--tan); padding: 6px 10px; border-radius: 4px 12px 12px 12px; margin-right: 32px; }
+.gordon-line.from-guest { border: 1px solid var(--maroon); border-left-width: 1px; padding: 6px 10px; border-radius: 12px 4px 12px 12px; margin-left: 32px; }
+
+/* Proximity: quick replies sit right on the text box they answer */
+.gordon-panel .gordon-replies:not(:empty) { margin-bottom: -4px; }
+.gordon-panel .gordon-input { border-top: 1px solid var(--tan); padding-top: 8px; }
+
+/* Common region: the help tools are their own labelled group */
+.gordon-panel .assist-tools { border: 1px solid var(--tan); border-radius: 4px; padding: 6px 8px; align-items: center; }
+.gordon-panel .assist-tools::before { content: attr(aria-label); font-size: 13px; font-weight: 700; width: 100%; }
+
+/* User control: what Gordon filled is marked until the guest changes it */
+.gordon-tag { display: inline-block; margin-left: 6px; padding: 0 6px; font-size: 12px; font-weight: 700; border-radius: 4px; background: var(--maroon); color: var(--ivory); vertical-align: middle; }
+
+@media (max-width: 700px) {
+  .gordon-progress ul { font-size: 12px; }
+  .gordon-line.from-gordon { margin-right: 12px; }
+  .gordon-line.from-guest { margin-left: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .voice-turn.is-loading::before { animation: none; } }
+.field > .gordon-tag { justify-self: start; align-self: flex-start; width: fit-content; margin: 4px 0 0; }
+.gordon-panel .assist-tools { margin-top: 0; }
+
+/* ---------- Waitlist (R-4, R-5) and live wait (R-9): js/waitlist.js, waitlist-page.js, livewait.js ---------- */
+.waitlist-link { margin-right: 4px; }
+.nav .waitlist-link.current { font-weight: bold; }
+.waitlist-today { display: inline-block; margin-top: 8px; }
+.waitlist { display: grid; grid-template-columns: 1fr 1.4fr; gap: 40px; align-items: start; }
+.waitlist-photo { width: 100%; height: 420px; object-fit: cover; }
+.wl-locs { border: 0; padding: 0; margin: 16px 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.wl-locs legend { font-weight: bold; margin-bottom: 8px; }
+.wl-locs .chip { display: inline-flex; gap: 6px; align-items: center; }
+.wl-locs .chip:has(input:checked) { background: var(--burgundy); border-color: var(--burgundy); color: var(--ivory); }
+.wl-card { border: 1px solid var(--maroon); border-left: 6px solid var(--burgundy); border-radius: 4px; padding: 12px 16px; max-width: 520px; }
+.wl-card.is-closed { border-left-color: var(--tan); }
+.wl-now { margin: 0; font-weight: bold; }
+.wl-big { font-size: 24px; font-weight: bold; margin: 6px 0; }
+.wl-card .help { margin: 0; }
+#wl-form, #wl-done { max-width: 520px; }
+.error-msg { font-weight: bold; }
+.live-wait { border: 1px solid var(--maroon); border-left: 6px solid var(--tan); border-radius: 4px; padding: 8px 16px; margin: 16px 0; }
+.live-wait h2 { margin: 4px 0; font-size: 20px; }
+.live-wait.is-ontime { border-left-color: var(--burgundy); }
+.live-wait.is-late { border-left-color: var(--maroon); border-left-style: double; border-left-width: 8px; }
+.lw-text { font-weight: bold; margin: 4px 0; }
+.live-wait .help { margin: 4px 0; }
+@media (max-width: 700px) {
+  .waitlist { grid-template-columns: 1fr; }
+  .waitlist-photo { height: 180px; }
+  .wl-big { font-size: 20px; }
+}
+
 /* ---------- Menu, Hours & locations, Private events pages ---------- */
 .nav .links a[aria-current="page"] { font-weight: bold; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .page-hero { display: grid; grid-template-columns: 2fr 3fr; gap: 32px; align-items: center; margin-bottom: 32px; }
