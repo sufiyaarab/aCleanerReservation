@@ -125,3 +125,18 @@ The plain site already shows status and errors step by step. Gordon's panel now 
 - The numbers are simulated in the browser like availability (no backend). Nothing about a waitlist guest is stored, only the first name and last 4 digits are kept in memory until the page closes.
 - **Presenting outside 9 am to 1:30 pm:** add `?demo=1` to waitlist.html or confirmed.html. The waitlist clock moves to opening hours and the live wait starts 10 minutes before the booking. The confirmation page also has a "Presenting? Preview the live wait" link.
 - English and French, and a phone layout, like the rest of the site.
+
+---
+
+## What Gordon understands (built-in parser, js/gordon-parser.js)
+
+Tested with about 200 phrases in English and French (R-15 to R-18). A few examples per detail:
+- **Party size:** "4 people", "table for two", "there are 4 of us", "we're five", "family of 4", "2 adults and 2 kids", "me and my husband and our 2 kids", "me plus 3", "just me", "a dozen", "4 total". Changes: "actually make it 3", "one more person", "two more people", "one less".
+- **Correcting yourself:** "four wait no five", "Sunday, sorry, Saturday", "at 10, I mean 11", "4 no 5", "scratch that". What comes after the correction wins.
+- **Date:** "tomorrow", "this Sunday", "next Saturday", "this weekend", "next weekend", "Sunday next week", "in 3 days", "a week from today", "Dec 13", "December thirteenth", "the 22nd", "12/13". When a day is full, "sure" takes the next free day he offers.
+- **Time:** "11", "11 am", "11:30", "eleven thirty", "half past ten", "half ten", "10ish", "around 10", "noon", "9 in the morning", "as early as possible", "latest you have". "Quarter past 11" gets the two nearest half hours. When he offers two times: "the earlier one", "the later one", "the first one".
+- **Location:** Oshawa, Toronto, "downtown".
+- **Seating:** "high-top", "at the bar", "low table", "wheelchair", "stroller", "high chair", "no high tops", "no preference", "whatever is free".
+- **Dietary:** nuts, gluten, dairy, vegetarian or vegan, shellfish, plus notes for egg, soy, sesame, fish, halal, kosher, no pork, pregnant, diabetic. "No allergies", "we eat anything".
+- **Name and phone:** "my name is", "call me", "put it under", "905 555 0100", "(905) 555-0100", spoken digits ("nine oh five...").
+- **Confirming:** "yes", "looks good", "sounds great", "go for it", "absolutely". A "yes" that also changes something ("sure, make it 4") reads the summary back again instead of booking. "Not quite", "hold on" or "change the time" let the guest change one item.

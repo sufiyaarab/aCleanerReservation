@@ -182,6 +182,12 @@
       if (p && !Object.keys(p).length) p = null; // nothing understood: give the built-in parser a go
     }
     if (!p) p = GordonParser.parse(L.lang === 'fr' ? L.toEnglish(text) : text, B.todayISO(), g.asking);
+    // "one more person" changes the party size he has; "the earlier one" picks from the times he offered
+    if (p.partyDelta && p.party === undefined && g.known.party) p.party = S.party + p.partyDelta;
+    if (p.pick && !p.time && g.timeOffers && g.timeOffers.length) p.time = p.pick === 'later' ? g.timeOffers[g.timeOffers.length - 1] : g.timeOffers[0];
+    // "yes" / "sure" to the next free day he suggested
+    if (g.asking === 'date' && g.dateOffer && p.yes && !p.date) p.date = g.dateOffer;
+    g.dateOffer = null;
     const notes = [];      // what he did, said back in one reply
     let understood = false;
     let stop = null;       // a problem he has to ask about before moving on
@@ -247,7 +253,7 @@
     if (p.timeProblem) {
       understood = true;
       if (p.timeProblem === 'outside') { stop = stop || t().outside(L.time(p.timeSaid)); }
-      else { stop = stop || t().half(L.times(p.timeNear)); g.replies = L.times(p.timeNear); }
+      else { stop = stop || t().half(L.times(p.timeNear)); g.replies = L.times(p.timeNear); g.timeOffers = p.timeNear; }
       g.asking = 'time';
     } else if (p.time) {
       understood = true;
@@ -263,12 +269,12 @@
     if (p.seating) { understood = true; g.seating = p.seating; if (g.timeOk) B.setSeating(p.seating === 'none' ? null : p.seating); notes.push(t().seat[p.seating]); }
 
     // Dietary needs
-    if (p.dietary || (g.asking === 'diet' && (p.no || p.none))) {
+    if (p.dietary || p.notes || (g.asking === 'diet' && (p.no || p.none))) {
       understood = true; g.dietDone = true;
       const items = p.dietary || [];
       if (g.timeOk && g.seating) B.setDietary(items, p.notes || '');
       else { g.pendingDiet = { items, notes: p.notes || '' }; }
-      notes.push(items.length ? t().dietNoted(items) : t().dietNone);
+      notes.push(items.length ? t().dietNoted(items) : p.notes ? t().dietNote(p.notes) : t().dietNone);
     } else if (g.asking === 'diet' && !understood && text.length > 2) {
       // anything else they type here goes into "Anything else?"
       understood = true; g.dietDone = true;
@@ -298,7 +304,7 @@
     if (g.known.party && g.known.date && g.known.time && !g.timeOk) {
       const r = B.check();
       if (r.status === 'fullyBooked') {
-        g.known.date = false; g.asking = 'date';
+        g.known.date = false; g.asking = 'date'; g.dateOffer = r.next;
         const next = L.date(r.next);
         return say([...notes, t().fullyBooked(S.location, L.date(S.date), next)].join(' '), [next]);
       }
