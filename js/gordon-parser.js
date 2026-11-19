@@ -44,7 +44,7 @@ const GordonParser = (() => {
   const sfx = (n) => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
   const UNITS = 'one|two|three|four|five|six|seven|eight|nine';
   function normalize(t, asking) {
-    t = t.replace(/\bo\s?clock\b/g, "o'clock").replace(/\b(?:around |about )?(\d{1,2})\s*-?ish\b/g, 'around $1').replace(/\b(\w+)ish\b/g, (m, w) => (w in WORDS ? 'around ' + w : m));
+    t = t.replace(/\bo\s?clock\b/g, "o'clock").replace(/\b(\d{1,2}:\d{2})\s*-?ish\b/g, 'around $1').replace(/\bnoon-?ish\b/g, 'noon').replace(/(?<!:)\b(?:around |about )?(\d{1,2})\s*-?ish\b/g, 'around $1').replace(/\b(\w+)ish\b/g, (m, w) => (w in WORDS ? 'around ' + w : m));
     t = t.replace(/\ba dozen\b/g, '12').replace(/\bhalf a dozen\b/g, '6');
     // ordinal words: "twenty second" -> 22nd, "thirteenth" -> 13th ("first"/"second" only next to a month)
     t = t.replace(new RegExp(`\\b(twenty|thirty)[- ](first|second|third|fourth|fifth|sixth|seventh|eighth|ninth)\\b`, 'g'), (m, a, b) => sfx(WORDS[a] + ORD[b]));
@@ -58,8 +58,10 @@ const GordonParser = (() => {
       if (w === 'one' && (/\b(the|that|this|which|any|no|every|some|each|other|first|second|earlier|later|last|toronto|oshawa)\s+$/.test(all.slice(0, i)) || /^\s+(of|another|sec|second|moment|minute|min)\b/.test(all.slice(i + 3)))) return m;
       return String(WORDS[w]);
     });
+    t = t.replace(/\b(\d{1,2})\s+a\s?m\b/g, '$1 am').replace(/\b(\d{1,2})\s+p\s?m\b/g, '$1 pm');
+    t = t.replace(/\bdouble (\d|oh)\b/g, '$1 $1').replace(/\btriple (\d|oh)\b/g, '$1 $1 $1');
     // "oh" as zero, only inside spoken digits ("nine oh five")
-    t = t.replace(/(?<=\b\d\s+)oh(?=\s+\d\b)/g, '0');
+    for (let i = 0; i < 3; i++) t = t.replace(/(?<=\b\d\s+)oh(?=\s+(?:\d|oh)\b)|(?<=\b\d\s+oh\s+)oh\b|(?<=\b\d\s+)oh$/g, '0');
     // spoken phone numbers: "9 0 5 5 5 5 0 1 0 0" -> 9055550100
     t = t.replace(/\b\d(?:[\s,.-]+\d){9,10}\b/g, (m) => m.replace(/\D/g, ''));
     t = t.replace(/\b(\d{3})\s+(\d{3})\s+(\d{2})\s+(\d{2})\b/g, '$1$2$3$4');
@@ -71,6 +73,34 @@ const GordonParser = (() => {
     const plus = (n) => { const d = fromISO(today); d.setDate(d.getDate() + n); return iso(d); };
     const comingDay = (want) => (want - fromISO(today).getDay() + 7) % 7; // days until that weekday (0 = today)
     if ((m = take(s, /\bday after tomorrow\b/))) return plus(2);
+    // holidays
+    const nthDay = (year, month, weekday, n) => { // n = 1..5, or -1 for the last one
+      if (n < 0) { const d = new Date(year, month + 1, 0, 12); while (d.getDay() !== weekday) d.setDate(d.getDate() - 1); return d; }
+      const d = new Date(year, month, 1, 12); while (d.getDay() !== weekday) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 7 * (n - 1)); return d.getMonth() === month ? d : null;
+    };
+    const next = (fn) => { const y = fromISO(today).getFullYear(); let d = fn(y); if (!d || iso(d) < today) d = fn(y + 1); return d ? iso(d) : null; };
+    const HOL = [[/\bchristmas eve\b|\bxmas eve\b/, y => new Date(y, 11, 24, 12)], [/\bchristmas( day)?\b|\bxmas\b/, y => new Date(y, 11, 25, 12)],
+      [/\bboxing day\b/, y => new Date(y, 11, 26, 12)], [/\bnew years? eve\b|\bnew year'?s eve\b/, y => new Date(y, 11, 31, 12)],
+      [/\bnew year'?s?( day)?\b/, y => new Date(y, 0, 1, 12)], [/\bvalentine'?s?( day)?\b/, y => new Date(y, 1, 14, 12)],
+      [/\bst\.? patrick'?s( day)?\b/, y => new Date(y, 2, 17, 12)], [/\bcanada day\b/, y => new Date(y, 6, 1, 12)], [/\bhalloween\b/, y => new Date(y, 9, 31, 12)],
+      [/\bmother'?s day\b/, y => nthDay(y, 4, 0, 2)], [/\bfather'?s day\b/, y => nthDay(y, 5, 0, 3)], [/\bfamily day\b/, y => nthDay(y, 1, 1, 3)],
+      [/\bthanksgiving\b/, y => nthDay(y, 9, 1, 2)], [/\bvictoria day\b/, y => { const d = new Date(y, 4, 24, 12); while (d.getDay() !== 1) d.setDate(d.getDate() - 1); return d; }]];
+    for (const [re, fn] of HOL) if ((m = take(s, re))) return next(fn);
+    // "first Sunday of December", "last Saturday in November"
+    if ((m = take(s, new RegExp(`\\b(1st|first|2nd|second|3rd|4th|last)\\s+(sun|mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?)(?:day)?\\s+(?:of|in)\\s+(?:the month|this month|next month|${MONRE})\\b`)))) {
+      const n = { '1st': 1, first: 1, '2nd': 2, second: 2, '3rd': 3, '4th': 4, last: -1 }[m[1]];
+      const wd = DAYS.findIndex(d => d.startsWith(m[2].slice(0, 3)));
+      const t0 = fromISO(today); let mon = t0.getMonth();
+      if (/next month/.test(m[0])) mon += 1; else if (m[3]) mon = MONTHS.indexOf(m[3].slice(0, 3));
+      let y = t0.getFullYear(); if (mon > 11) { mon -= 12; y += 1; }
+      let d = nthDay(y, mon, wd, n); if (d && iso(d) < today) d = nthDay(y + 1, mon, wd, n);
+      return d ? iso(d) : null;
+    }
+    // "the Sunday after next", "weekend after next"
+    if ((m = take(s, /\b(?:the\s+)?(sun|mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|week ?end)(?:day)?\s+after next\b/))) {
+      const want = /week/.test(m[1]) ? 6 : DAYS.findIndex(d => d.startsWith(m[1].slice(0, 3)));
+      return plus(comingDay(want) + 7);
+    }
     if ((m = take(s, /\b(?:a|1|one) week (?:from|after) (today|tomorrow|now)\b|\bin (?:a|1) week\b|\bthis time next week\b/))) return plus(m[1] === 'tomorrow' ? 8 : 7);
     if ((m = take(s, /\bin (\d{1,2}) days?\b/))) return plus(Number(m[1]));
     if ((m = take(s, /\b(this|next|the|on the|coming)?\s*week ?ends?\b/))) {
@@ -94,7 +124,7 @@ const GordonParser = (() => {
     // 15 November, 15th of nov
     if ((m = take(s, new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?${MONRE}\\b`)))) return makeDate(today, MONTHS.indexOf(m[2].slice(0, 3)), Number(m[1]));
     // 11/15 (month/day)
-    if ((m = take(s, /\b(\d{1,2})\/(\d{1,2})\b/))) return makeDate(today, Number(m[1]) - 1, Number(m[2]));
+    if ((m = take(s, /\b(\d{1,2})\/(\d{1,2})\b/))) return Number(m[1]) > 12 ? makeDate(today, Number(m[2]) - 1, Number(m[1])) : makeDate(today, Number(m[1]) - 1, Number(m[2])); // 22/11 is day/month
     // (this|next|on) sunday
     if ((m = take(s, /\b(?:(this|next|on|coming|this coming)\s+)?(sun|mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?)(?:day)?\b\.?(?:\s+the\s+(?=\d{1,2}(?:st|nd|rd|th)))?/))) {
       const want = DAYS.findIndex(d => d.startsWith(m[2].slice(0, 3)));
@@ -104,6 +134,8 @@ const GordonParser = (() => {
       d.setDate(d.getDate() + add);
       return iso(d);
     }
+    // "my wife's 40th", "his 30th birthday" are ages, not dates
+    s.text = s.text.replace(/(?:'s|\b(?:wife|husband|partner|mom|mum|mother|dad|father|son|daughter|friend|sister|brother|grandma|grandpa|grandmother|grandfather|boss|kid|baby|aunt|uncle|cousin|niece|nephew)s|\b(?:my|his|her|our|their|your))\s+(\d{1,3})(st|nd|rd|th)\b|\b(\d{1,3})(st|nd|rd|th)\s+(birthday|bday|b-day|anniversary)\b/g, ' ');
     // the 15th
     if ((m = take(s, /\b(?:the\s+)?(\d{1,2})(st|nd|rd|th)\b/)) || (asking === 'date' && (m = take(s, /^\s*(?:the\s+|on the\s+)?(\d{1,2})\s*$/)))) {
       const t = fromISO(today);
@@ -119,17 +151,19 @@ const GordonParser = (() => {
   function parseTime(s, asking) {
     let h, min = 0, ap = null, m;
     s.text = s.text.replace(/\b(\d{1,2})\s+in the morning\b/, '$1 am').replace(/\b(\d{1,2})\s+in the afternoon\b/, '$1 pm');
-    if ((m = take(s, /\b(?:as early as (?:possible|you can|we can)|earliest(?: (?:time|slot|table|one|possible))?|first thing(?: in the morning)?|(?:right )?(?:at|when you) open(?:ing)?|opening(?: time)?)\b/))) { h = 9; ap = 'am'; }
+    if (asking === 'time' && (m = take(s, /\b(any ?time|whenever|whatever(?:'s| is)? (?:free|open|available)|doesn'?t matter|don'?t mind|first available|earliest available|what(?:ever)? you have)\b/))) { h = 9; ap = 'am'; }
+    else if ((m = take(s, /\b(?:as early as (?:possible|you can|we can)|earliest(?: (?:time|slot|table|one|possible))?|first thing(?: in the morning)?|(?:right )?(?:at|when you) open(?:ing)?|opening(?: time)?)\b/))) { h = 9; ap = 'am'; }
     else if ((m = take(s, /\b(?:as late as (?:possible|you can)|latest(?: (?:time|slot|table|one|possible))?|last (?:seating|slot|time|table))\b/))) { h = 1; min = 30; ap = 'pm'; }
     else if ((m = take(s, /\b(?:12\s+)?(noon|midday|lunch ?time)\b/))) { h = 12; ap = 'pm'; }
     else if ((m = take(s, /\bquarter (past|after) (\d{1,2})\b/))) { h = Number(m[2]); min = 15; }
     else if ((m = take(s, /\bquarter (to|before|of) (\d{1,2})\b/))) { h = Number(m[2]) - 1; min = 45; }
     else if ((m = take(s, /\bhalf (?!past)(\d{1,2})\b/))) { h = Number(m[1]); min = 30; } // British "half ten
     else if ((m = take(s, /\bhalf past (\d{1,2})\b/))) { h = Number(m[1]); min = 30; }
+    else if ((m = take(s, /\b(?:at|around|for|by)\s+(\d{1,2})(00|15|30|45)\s*(a\.?m\.?|p\.?m\.?)?\b/))) { h = Number(m[1]); min = Number(m[2]); ap = m[3]; } // "at 1030"
     else if ((m = take(s, /\b(\d{1,2})[:.](\d{2})\s*(a\.?m\.?|p\.?m\.?)?/))) { h = Number(m[1]); min = Number(m[2]); ap = m[3]; }
     else if ((m = take(s, /\b(\d{1,2})\s+(00|15|30|45)\b(?!\s*(?:people|guests|of us|persons?|pax|ppl))\s*(a\.?m\.?|p\.?m\.?)?/))) { h = Number(m[1]); min = Number(m[2]); ap = m[3]; } // "eleven thirty"
     else if ((m = take(s, /\b(\d{1,2})\s*(a\.?m\.?|p\.?m\.?)/))) { h = Number(m[1]); ap = m[2]; }
-    else if ((m = take(s, /\b(?:at|around|by|about|maybe|say|approx(?:imately)?|time (?:to|at|for|of)|move it to|push it to|make it at)\s+(?:around\s+|about\s+)?(\d{1,2})(?:\s*o'?clock)?\b(?!\s*(?:people|guests|of us|persons?|pax|ppl|adults|kids|more|less|fewer|days?|weeks?))/))) { h = Number(m[1]); }
+    else if ((m = take(s, /\b(?:at|around|by|about|say|approx(?:imately)?|time (?:to|at|for|of)|move it to|push it to|make it at)\s+(?:around\s+|about\s+)?(\d{1,2})(?:\s*o'?clock)?\b(?!\s*(?:people|guests|of us|persons?|pax|ppl|adults|kids|more|less|fewer|days?|weeks?))/))) { h = Number(m[1]); }
     else if (asking === 'time' && (m = take(s, /\b(\d{1,2})\b(?!\s*(?:people|guests|of us|persons?|pax|ppl|more|less|fewer))/))) { h = Number(m[1]); } // "maybe 11 then"
     else if ((m = take(s, /\b(\d{1,2}) o'?clock\b/))) { h = Number(m[1]); }
     else return undefined;
@@ -149,12 +183,20 @@ const GordonParser = (() => {
 
   function parseParty(s, asking) {
     let m;
+    // "four, maybe five", "4 or 5 people": plan for the bigger number
+    if ((m = take(s, new RegExp(`\\b${NUMRE}\\s*(?:people\\s+)?(?:or|,?\\s*maybe|to|-|,?\\s*possibly|,?\\s*might be)\\s+${NUMRE}\\b(?!\\s*(?:am|pm|:|o'?clock))(\\s+(?:people|persons?|guests|of us))?`))) && (asking === 'party' || m[3])) return Math.max(toNum(m[1]), toNum(m[2]));
+    if ((m = take(s, new RegExp(`\\b${NUMRE}\\s+couples\\b`)))) return toNum(m[1]) * 2;
+    if ((m = take(s, /\b(?:a|1) couple and (?:a |1 )?(?:friend|single)\b/))) return 3;
+    if ((m = take(s, new RegExp(`\\b${NUMRE}\\s+famil(?:y|ies) of\\s+${NUMRE}\\b`)))) return toNum(m[1]) * toNum(m[2]);
+    s.text = s.text.replace(/\btwins\b/g, '2 kids').replace(/\btriplets\b/g, '3 kids');
     // adults plus children: "2 adults and 2 kids", "3 of us and a baby"
     const KID = '(?:kids?|children|child|babies|baby|toddlers?|infants?|teens?|teenagers?|seniors?|grand ?kids?|grandchildren)';
     const grp = [...s.text.matchAll(new RegExp(`\\b(\\d{1,2}|a|an|our|my)\\s+(?:little\\s+|young\\s+|small\\s+)?(adults?|grown-?ups|${KID})\\b`, 'g'))];
     if (grp.length && grp.some(g => !/^(adults?|grown-?ups)$/.test(g[2]) || grp.length > 1)) {
       let n = grp.reduce((a, g) => a + (/^\d/.test(g[1]) ? Number(g[1]) : 1), 0);
       grp.forEach(g => { s.text = s.text.replace(g[0], ' '); });
+      const base = !/adults?|grown/.test(grp.map(g => g[2]).join(' ')) && s.text.match(new RegExp(`\\b(?:${NUMRE}\\s+(?:of us|people|persons|guests)|(?:we are|we're|there are)\\s+${NUMRE})\\b`));
+      if (base) { n += toNum(base[1] || base[2]); s.text = s.text.replace(base[0], ' '); return n; } // "4 of us plus a baby"
       if (/\b(me|myself|i)\b/.test(s.text) && !/adults?|grown/.test(grp.map(g => g[2]).join(' '))) n += 1; // "me and 2 kids"
       if (/\b(?:my|a) (wife|husband|partner|spouse|friend|mom|mum|mother|dad|father|girlfriend|boyfriend|fiance|fiancee|sister|brother|colleague|date)\b/.test(s.text) && !/adults?|grown/.test(grp.map(g => g[2]).join(' '))) n += 1;
       return n;
@@ -222,7 +264,8 @@ const GordonParser = (() => {
     }
     if (out.name) {
       out.name = out.name.split(/\s+(?:and|my|with|for|at|on|please|number|phone|thanks?|thank)\b/)[0];
-      out.name = out.name.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+      out.name = out.name.trim().split(/\s+/).map(w => w.split(/(['-])/).map(cap).join('').replace(/^(Mc|Mac)([a-z])(?=[a-z]{2})/, (m, a, b) => a + b.toUpperCase())).join(' ');
     }
 
     if (/\b(oshawa|durham|osh)\b/.test(s.text)) out.location = 'Oshawa';
@@ -249,7 +292,7 @@ const GordonParser = (() => {
 
     const noHigh = /\b(no|not|don'?t want|avoid|can'?t do|cannot do|can'?t use|without)\s+(?:a\s+|the\s+|any\s+)?(high|tall|bar|stools?)/.test(t);
     if (!noHigh && /\b(high[- ]?tops?|high tables?|high seat(ing|s)?|higher (table|seat(ing)?)|tall tables?|bar (seat(ing|s)?|height|stools?|tables?)|counter (height|seat(ing)?)|stools?|barstools?|sit at the bar|at the bar)\b/.test(t)) out.seating = 'High';
-    else if (noHigh || /\b(low tables?|low seat(ing)?|lower (table|seat(ing)?)|regular (table|height|seat(ing)?)|normal (table|height|seat(ing)?)|standard (table|height)|table height|booth|wheelchair|accessible|accessibility|walker|mobility|cane|crutches|stroller|pram|high ?chair|booster|elderly|grandma|grandpa|no stools)\b/.test(t) || (asking === 'seating' && /\b(low|lower|regular|normal|standard)\b/.test(t))) out.seating = 'Low';
+    else if (noHigh || /\b(low tables?|low seat(ing)?|lower (table|seat(ing)?)|regular (table|height|seat(ing)?)|normal (table|height|seat(ing)?)|standard (table|height)|table height|booth|wheelchair|accessible(?! (?:washroom|bathroom|restroom|toilet|parking|entrance))|walker|mobility|cane|crutches|stroller|pram|high ?chair|booster|elderly|grandma|grandpa|no stools)\b/.test(t) || (asking === 'seating' && /\b(low|lower|regular|normal|standard)\b/.test(t))) out.seating = 'Low';
     else if (asking === 'seating' && /\b(high|higher|tall|bar|counter)\b/.test(t)) out.seating = 'High';
     else if (/\b(no preference|no pref|either is fine|either one|either works|any table|anywhere|wherever)\b/.test(t) || (asking === 'seating' && /\b(either|any|don'?t mind|doesn'?t matter|does not matter|whatever|no|none|nope|don'?t care|up to you|you choose|you pick|surprise me|whichever|fine|free)\b/.test(t))) out.seating = 'none';
 
@@ -258,7 +301,8 @@ const GordonParser = (() => {
     if (/\b(gluten|celiac|coeliac|wheat|gf)\b/.test(t)) diet.push('Gluten-free');
     if (/\b(dairy|lactose|milk allergy|no milk|no cheese|df)\b/.test(t)) diet.push('Dairy-free');
     if (/\b(vegetarian|vegan|veggie|no meat|plant[- ]based|don'?t eat meat|doesn'?t eat meat)\b/.test(t)) diet.push('Vegetarian');
-    if (/\b(shellfish|shrimp|prawns?|lobster|crab|scallops?|mussels?|clams?|oysters?)\b/.test(t)) diet.push('Shellfish allergy');
+    if (/\b(shellfish|seafood|sea food|shrimp|prawns?|lobster|crab|scallops?|mussels?|clams?|oysters?)\b/.test(t)) diet.push('Shellfish allergy');
+    if (/\bjain\b/.test(t) && !diet.includes('Vegetarian')) diet.push('Vegetarian');
     if (diet.length) out.dietary = diet;
     // anything else the kitchen should know goes in the notes
     const notes = [];
@@ -266,12 +310,54 @@ const GordonParser = (() => {
     const EXTRA = [[/\beggs?\b/, 'Egg allergy'], [/\b(soy|soya)\b/, 'Soy allergy'], [/\bsesame\b/, 'Sesame allergy'], [/\b(fish|salmon|tuna)\b(?! sauce)/, 'Fish allergy'],
       [/\bhalal\b/, 'Halal'], [/\bkosher\b/, 'Kosher'], [/\bpescatarian|pescetarian\b/, 'Pescatarian'], [/\bno pork|don'?t eat pork|pork[- ]free\b/, 'No pork'],
       [/\bno beef|don'?t eat beef\b/, 'No beef'], [/\bpregnan(t|cy)\b/, 'Pregnant'], [/\b(diabetic|diabetes)\b/, 'Diabetic'], [/\bketo\b/, 'Keto'],
-      [/\b(mustard)\b/, 'Mustard allergy'], [/\bcorn\b/, 'Corn allergy'], [/\b(strawberr(y|ies)|berr(y|ies))\b/, 'Berry allergy'], [/\b(epi ?pen|anaphyla\w*|severe)\b/, 'Severe allergy (EpiPen)']];
-    const dietTalk = /\b(allerg\w*|intoleran\w*|sensitiv\w*|can'?t (?:eat|have)|cannot (?:eat|have)|no |free|avoid|diet\w*|eat|halal|kosher|pescatarian|pregnan|diabet|keto|epi ?pen|anaphyla)/.test(t);
+      [/\b(mustard)\b/, 'Mustard allergy'], [/\bcorn\b/, 'Corn allergy'], [/\b(strawberr(y|ies)|berr(y|ies))\b/, 'Berry allergy'], [/\b(epi ?pen|anaphyla\w*|severe)\b/, 'Severe allergy (EpiPen)'],
+      [/\b(low (sodium|salt)|no salt|salt[- ]free|less salt)\b/, 'Low sodium'], [/\b(low sugar|no sugar|sugar[- ]free|no added sugar)\b/, 'Low sugar'],
+      [/\b(no alcohol|alcohol[- ]free|don'?t drink|sober)\b/, 'No alcohol'], [/\bjain\b/, 'Jain'], [/\bno onions?\b|\bonions?\b/, 'No onion'], [/\bno garlic\b|\bgarlic\b/, 'No garlic'],
+      [/\b(no (spicy|spice)|not spicy|mild)\b/, 'Not spicy'], [/\bmushrooms?\b/, 'No mushrooms'], [/\bcilantro|coriander\b/, 'No cilantro'],
+      [/\b(fodmap)\b/, 'Low FODMAP'], [/\b(paleo)\b/, 'Paleo'], [/\bgelatin\b/, 'No gelatin'], [/\bavocados?\b/, 'Avocado allergy'], [/\bbananas?\b/, 'Banana allergy'],
+      [/\bcinnamon\b/, 'Cinnamon allergy'], [/\b(chocolate|cocoa)\b/, 'Chocolate allergy'], [/\bcoconut\b/, 'Coconut allergy'], [/\b(latex)\b/, 'Latex allergy']];
+    const dietTalk = (asking === 'diet' && !/\b(fine|ok|okay|good|love|loves|like|likes|great|please|want|yummy|favou?rite)\b/.test(t)) || /\b(allerg\w*|intoleran\w*|sensitiv\w*|can'?t (?:eat|have)|cannot (?:eat|have)|no |free|avoid|diet\w*|eat|halal|kosher|pescatarian|pregnan|diabet|keto|epi ?pen|anaphyla|low (?:sodium|salt|sugar)|sugar|jain|fodmap|paleo|spicy|mild)/.test(t);
     if (dietTalk) EXTRA.forEach(([re, label]) => { if (re.test(t)) notes.push(label); });
+    // any other "allergic to X" / "X allergy" the lists don't know
+    const KNOWN = /^(nut|nuts|peanuts?|tree|gluten|wheat|dairy|milk|lactose|shellfish|seafood|shrimp|egg|eggs|soy|soya|sesame|fish|mustard|corn|berry|berries|strawberries|avocado|banana|cinnamon|chocolate|coconut|latex|any|no|an|a|the|food|some|severe|bad|mild|all|my|his|her|their)$/;
+    for (const am of t.matchAll(/\ballergic to (?:a |an |the )?([a-z]+)|\b([a-z]+) allerg(?:y|ies)\b/g)) {
+      const w = (am[1] || am[2]).replace(/s$/, ''); if (KNOWN.test(w) || KNOWN.test(w + 's') || w.length < 3) continue;
+      if (notes.some(n => n.toLowerCase().includes(w))) continue; // already noted ("No garlic")
+      const label = w.charAt(0).toUpperCase() + w.slice(1) + ' allergy'; if (!notes.includes(label)) notes.push(label);
+    }
     if (notes.length) out.notes = notes.join(', ');
 
-    if (/^\s*(y|ya|yes|yea|yeah|yeh|yep|yup|yas|sure|sure thing|ok|okay|okey|k|kk|alright|all right|please|please do|book it|go ahead|confirm(ed)?|correct|that'?s (right|correct|it|perfect|great|good|fine)|that is (right|correct)|sounds (good|great|perfect|right|fine)|perfect|great|lovely|awesome|excellent|wonderful|cool|fine|good|do it|absolutely|of course|definitely|certainly|indeed|affirmative|exactly|mhm+|uh[- ]?huh|go for it|let'?s do (it|that)|lets do it|looks? (good|great|right|perfect|correct|fine)|all (good|correct|set)|that works|works for me|right|yes please|yes book it)\b/.test(t)
+    // occasions and requests for "Anything else?" (not dietary)
+    const REQ = [[/\b(birthday|b-?day|bday|turning \d{1,3}|sweet (16|sixteen)|'s \d{1,3}(st|nd|rd|th)|(?:wife|husband|partner|mom|mum|mother|dad|father|son|daughter|friend|sister|brother|grandma|grandpa|grandmother|grandfather|boss|kid|baby|aunt|uncle|cousin|niece|nephew)s \d{1,3}(st|nd|rd|th)|(my|his|her|our|their) \d{2}(st|nd|rd|th))\b/, 'Birthday celebration'],
+      [/\b(christening|baptism|baptis(e|ing)|dedication)\b/, 'Christening'], [/\b(first )?communion|confirmation party\b/, 'Communion'],
+      [/\b(bachelorette|hen party|stag)\b/, 'Bachelorette'], [/\b(family )?reunion\b/, 'Family reunion'], [/\b(holiday|christmas|xmas|office|work|team|staff) (party|brunch|lunch|celebration|get together)\b/, 'Holiday party'],
+      [/\bgender reveal\b/, 'Gender reveal'], [/\b(funeral|memorial|celebration of life|wake)\b/, 'Memorial gathering'], [/\bwelcome (home|back)\b/, 'Welcome home'],
+      [/\b(separate (bills?|cheques?|checks?)|split (the )?(bill|cheque|check)|split bills?)\b/, 'Separate bills'],
+      [/\b(in a (bit of a )?(rush|hurry)|short on time|quick brunch|only have an hour|tight schedule|have to leave by)\b/, 'Short on time'],
+      [/\baccessible (washroom|bathroom|restroom|toilet)\b/, 'Accessible washroom'], [/\b(hard of hearing|deaf|hearing aid|hearing impaired)\b/, 'Guest is hard of hearing'],
+      [/\b(blind|low vision|visually impaired|large print)\b/, 'Guest has low vision'], [/\b(breast ?feed\w*|nurs(e|ing) (the |a |my )?baby|nursing)\b/, 'Space to nurse a baby'],
+      [/\bcar ?seat\b/, 'Room for a car seat'], [/\bvalentine'?s?( day)?\b/, "Valentine's Day"], [/\b(christmas|xmas)\b(?! party| brunch)/, 'Christmas'],
+      [/\bnew year'?s?\b/, "New Year's"], [/\bbaby'?s? first\b/, "Baby's first outing"], [/\b(allergic to dogs?|no dogs)\b/, 'Allergic to dogs'],
+      [/\b(photos?|photographer|pictures)\b/, 'Taking photos'], [/\b(balloons?|decorations?|decorate)\b/, 'Bringing decorations'], [/\b(flowers|bouquet)\b/, 'Bringing flowers'],
+      [/\b(gift|present)\b/, 'Bringing a gift'], [/\b(extra chair|extra space|lots of bags|luggage|suitcases?)\b/, 'Extra space for bags'], [/\b(wedding )?anniversary\b/, 'Anniversary'],
+      [/\b(engagement|engaged|proposal|proposing|propose)\b/, 'Engagement'], [/\bgraduat(ion|ing|ed)\b/, 'Graduation'],
+      [/\b(baby shower)\b/, 'Baby shower'], [/\b(bridal shower)\b/, 'Bridal shower'], [/\bretire(ment|d|ing)\b/, 'Retirement'],
+      [/\bpromotion\b/, 'Promotion'], [/\b(farewell|going away|goodbye party)\b/, 'Farewell'], [/\bmother'?s day\b/, "Mother's Day"], [/\bfather'?s day\b/, "Father's Day"],
+      [/\b(business (meeting|brunch)|work meeting|client meeting|interview)\b/, 'Business meeting'], [/\bdate night|first date\b/, 'Date night'],
+      [/\b(celebrat(e|ing|ion)|special occasion|party)\b(?! of| size)/, 'Celebration'],
+      [/\bhigh ?chairs?\b/, 'High chair needed'], [/\bbooster( seat)?s?\b/, 'Booster seat needed'], [/\b(stroller|pram|buggy)\b/, 'Room for a stroller'],
+      [/\b(wheelchair|walker|mobility)\b/, 'Wheelchair access'], [/\b(service dog|guide dog|service animal)\b/, 'Service animal'],
+      [/\b(quiet (table|spot|corner|area|place)|somewhere quiet|away from the (noise|kitchen))\b/, 'Quiet table if possible'],
+      [/\b(window (seat|table)|by the window|near the window)\b/, 'Window table if possible'],
+      [/\b(bring(ing)? (a |our own |my own )?cake|cake)\b/, 'Bringing a cake'], [/\bcandles?\b/, 'Candle on dessert'],
+      [/\bsurprise\b/, 'It is a surprise'], [/\b(running late|might be late|be a bit late)\b/, 'May arrive a little late']];
+    const req = [];
+    REQ.forEach(([re, label]) => { if (re.test(t) && !req.includes(label)) req.push(label); });
+    if (req.length > 1 && req.includes('Celebration')) req.splice(req.indexOf('Celebration'), 1);
+    if (req.includes('Holiday party') && req.includes('Christmas')) req.splice(req.indexOf('Christmas'), 1); // "celebrating a birthday" is just the birthday
+    if (req.length) out.requests = req;
+
+    if (/^\s*(?:(?:everything|it all|all|that all|this all|that's all|that is all|it|this|that|it's all|its all)\s+(?:is\s+|'s\s+|looks\s+|sounds\s+|seems\s+)?(?=[a-z]))?(y|ya|yes|yea|yeah|yeh|yep|yup|yas|sure|sure thing|ok|okay|okey|k|kk|alright|all right|please|please do|book it|go ahead|confirm(ed)?|correct|that'?s (right|correct|it|perfect|great|good|fine)|that is (right|correct)|sounds (good|great|perfect|right|fine)|perfect|great|lovely|awesome|excellent|wonderful|cool|fine|good|do it|absolutely|of course|definitely|certainly|indeed|affirmative|exactly|mhm+|uh[- ]?huh|go for it|let'?s do (it|that)|lets do it|looks? (good|great|right|perfect|correct|fine)|seems? (good|right|fine)|all (good|correct|set)|that works|works for me|right|yes please|yes book it)\b/.test(t)
       && !/\b(not|isn'?t|wrong|but|except|change|instead|actually)\b/.test(t)) out.yes = true;
     if (/^\s*(n|no|nope|nah|naw|not really|not quite|not yet|none|nothing|no thanks|no thank you|hold on|wait|hang on|one sec(ond)?|incorrect|not right|that'?s (not right|wrong|incorrect))\b/.test(t)) out.no = true;
     if (/\b(none|nothing|no allergies|no allergy|no dietary|no restrictions|no needs|no special|nothing special|nothing like that|all good|we'?re (fine|good|ok|okay)|we are (fine|good)|we can eat anything|we eat anything|eat everything|anything is fine|no issues|none of us|not that i know|no one does|no one has|no one|nobody)\b/.test(t)) out.none = true;

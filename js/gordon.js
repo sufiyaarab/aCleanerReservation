@@ -266,7 +266,12 @@
     }
 
     // Seating (low or high, the table itself stays No preference)
-    if (p.seating) { understood = true; g.seating = p.seating; if (g.timeOk) B.setSeating(p.seating === 'none' ? null : p.seating); notes.push(t().seat[p.seating]); }
+    if (p.seating) {
+      understood = true;
+      const same = g.seating === p.seating; // "a high chair" implies a low table: don't say it again
+      g.seating = p.seating; if (g.timeOk) B.setSeating(p.seating === 'none' ? null : p.seating);
+      if (!same) notes.push(t().seat[p.seating]);
+    }
 
     // Dietary needs
     if (p.dietary || p.notes || (g.asking === 'diet' && (p.no || p.none))) {
@@ -274,13 +279,12 @@
       const items = p.dietary || [];
       if (g.timeOk && g.seating) B.setDietary(items, p.notes || '');
       else { g.pendingDiet = { items, notes: p.notes || '' }; }
-      notes.push(items.length ? t().dietNoted(items) : p.notes ? t().dietNote(p.notes) : t().dietNone);
-    } else if (g.asking === 'diet' && !understood && text.length > 2) {
-      // anything else they type here goes into "Anything else?"
-      understood = true; g.dietDone = true;
-      if (g.timeOk && g.seating) B.setDietary([], text); else g.pendingDiet = { items: [], notes: text };
-      notes.push(t().dietNote(text));
+      const said = [...items, ...String(p.notes || '').split(/\s*,\s*/).filter(Boolean)];
+      notes.push(said.length ? t().dietNoted(said) : t().dietNone);
     }
+
+    // Occasions and requests ("it's for a birthday", "a high chair please") go in "Anything else?"
+    if (p.requests && p.requests.length) { understood = true; B.addNotes(p.requests); notes.push(t().requestNoted(L.diet(p.requests))); }
 
     // Name and phone
     if (p.name) { understood = true; g.name = p.name; notes.push(t().name(p.name)); }

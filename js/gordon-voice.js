@@ -170,7 +170,19 @@ const GordonVoice = (() => {
     return { id, done: new Promise(resolve => { waiting.set(id, resolve); worker.postMessage({ type: 'say', id, text, voice: VOICE, speed: SPEED }); }) };
   }
   // Make a line ahead of time, so it plays with no wait when speak() asks for it.
+  // Phone and confirmation numbers are read one digit at a time ("four one six, five five five...")
+  // instead of as amounts ("four hundred and sixteen"). Only the spoken words change, not the captions.
+  const DIGITS = { en: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'],
+    fr: ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'] };
+  function sayable(text, lang) {
+    const w = DIGITS[lang === 'fr' ? 'fr' : 'en'];
+    const spell = (g) => g.split('').map(d => w[d]).join(' ');
+    return String(text)
+      .replace(/(?:\+?1[\s.-]?)?\(?(\d{3})\)?[\s.-]?(\d{3})[\s.-](\d{4})\b/g, (m, a, b, c) => `${spell(a)}, ${spell(b)}, ${spell(c)}`)
+      .replace(/#?\b\d{4,}\b/g, (m) => spell(m.replace('#', '')));
+  }
   function prefetch(text, lang = 'en') {
+    text = sayable(text, lang);
     if (lang !== 'en' || state !== 'ready' || !text) return;
     pieces(text).forEach(p => { if (!made.has(p)) made.set(p, job(p)); });
   }
@@ -202,6 +214,7 @@ const GordonVoice = (() => {
   }
 
   function speak(text, { lang = 'en', onstart } = {}) {
+    text = sayable(text, lang);
     stopNow(true); // a new line replaces the old one but keeps lines made ahead
     const my = run;
     busy = true;

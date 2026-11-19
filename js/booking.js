@@ -31,7 +31,7 @@ function todayISO() {
   return d.toISOString().slice(0, 10);
 }
 function prettyDate(iso) {
-  return new Date(iso + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+  return new Date(iso + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 function addDays(iso, n) {
   const d = new Date(iso + 'T12:00:00');
@@ -435,10 +435,26 @@ window.Booking = {
     goTo(3, false); highlight($('step3')); resume();
   },
   setDietary(items, notes = '') {
-    $('diet-chips').querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', items.includes(c.dataset.value)));
-    $('notes').value = notes;
-    if (current === 4 || current === 5) finishDiet(false); else { booking.dietary = items; booking.notes = notes; }
+    // needs beyond the five chips ("Egg allergy", "Halal") get a chip of their own, so the guest can see and untick them
+    const extra = String(notes || '').split(/\s*,\s*/).filter(Boolean);
+    extra.forEach(label => {
+      if ([...$('diet-chips').children].some(c => c.dataset.value === label)) return;
+      const c = document.createElement('button');
+      c.type = 'button'; c.className = 'chip'; c.dataset.value = label; c.textContent = label;
+      $('diet-chips').append(c);
+    });
+    const all = [...items, ...extra];
+    $('diet-chips').querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', all.includes(c.dataset.value)));
+    if (current === 4 || current === 5) finishDiet(false); else booking.dietary = all;
     highlight($('diet-chips'));
+  },
+  // occasions and requests Gordon hears ("it's for a birthday", "we need a high chair") go in "Anything else?"
+  addNotes(list) {
+    const have = $('notes').value.split(/\s*,\s*/).filter(Boolean);
+    list.forEach(x => { if (!have.some(h => h.toLowerCase() === x.toLowerCase())) have.push(x); });
+    $('notes').value = have.join(', ');
+    booking.notes = $('notes').value;
+    highlight($('notes'));
   },
   setContact(name, phone) {
     if (current !== 5) goTo(5);

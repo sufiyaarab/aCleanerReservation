@@ -9,12 +9,22 @@ const GordonLang = (() => {
 
   // ---------- formatting ----------
   const DIET_FR = { 'Nut allergy': 'allergie aux noix', 'Gluten-free': 'sans gluten', 'Dairy-free': 'sans produits laitiers',
-    'Vegetarian': 'végétarien', 'Shellfish allergy': 'allergie aux fruits de mer' };
+    'Vegetarian': 'végétarien', 'Shellfish allergy': 'allergie aux fruits de mer', 'Egg allergy': 'allergie aux œufs', 'Soy allergy': 'allergie au soja',
+    'Sesame allergy': 'allergie au sésame', 'Fish allergy': 'allergie au poisson', 'Halal': 'halal', 'Kosher': 'casher', 'Pescatarian': 'pescétarien',
+    'No pork': 'sans porc', 'No beef': 'sans bœuf', 'Pregnant': 'enceinte', 'Diabetic': 'diabétique', 'Keto': 'céto', 'Vegan': 'végétalien',
+    'Mustard allergy': 'allergie à la moutarde', 'Corn allergy': 'allergie au maïs', 'Berry allergy': 'allergie aux petits fruits', 'Severe allergy (EpiPen)': 'allergie grave (EpiPen)',
+    'Birthday celebration': 'anniversaire', 'Anniversary': 'anniversaire de mariage', 'Engagement': 'fiançailles', 'Graduation': 'remise de diplôme',
+    'Baby shower': 'fête prénatale', 'Bridal shower': 'enterrement de vie de jeune fille', 'Retirement': 'départ à la retraite', 'Promotion': 'promotion',
+    'Farewell': 'fête de départ', "Mother's Day": 'fête des Mères', "Father's Day": 'fête des Pères', 'Business meeting': 'repas d’affaires',
+    'Date night': 'soirée en amoureux', 'Celebration': 'célébration', 'High chair needed': 'chaise haute', 'Booster seat needed': 'rehausseur',
+    'Room for a stroller': 'place pour une poussette', 'Wheelchair access': 'accès en fauteuil roulant', 'Service animal': 'animal d’assistance',
+    'Quiet table if possible': 'table au calme si possible', 'Window table if possible': 'près de la fenêtre si possible', 'Bringing a cake': 'nous apportons un gâteau',
+    'Candle on dessert': 'une bougie sur le dessert', 'It is a surprise': 'c’est une surprise', 'May arrive a little late': 'arrivée peut-être un peu en retard' };
   function date(iso) {
     const d = new Date(iso + 'T12:00:00');
     return lang === 'fr'
       ? d.toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' })
-      : d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+      : d.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
   }
   function time(t) { // '1:30 pm' -> '13 h 30' in French
     if (lang !== 'fr' || !t) return t;
@@ -62,6 +72,7 @@ const GordonLang = (() => {
     time: (t, changed) => (changed ? `Changed the time to ${t}.` : `${t}.`),
     seat: { none: 'No seating preference. Easy-going, I like it.', High: 'A high-top.', Low: 'A low table.' },
     dietNoted: (items) => `Noted for the kitchen: ${items.join(', ')}.`,
+    requestNoted: (items) => `I've added that to the booking: ${items.join(', ')}.`,
     dietNone: 'No dietary needs. Splendid.',
     dietNote: (t) => `I've added a note for the kitchen: "${t}".`,
     name: (n) => `Booking under ${n}.`,
@@ -123,6 +134,7 @@ const GordonLang = (() => {
     time: (t, changed) => (changed ? `J'ai changé l'heure pour ${t}.` : `À ${t}.`),
     seat: { none: 'Pas de préférence de table.', High: 'Une table haute.', Low: 'Une table basse.' },
     dietNoted: (items) => `C'est noté : ${diet(items).join(', ')}.`,
+    requestNoted: (items) => `Je l'ajoute à la réservation : ${items.join(', ')}.`,
     dietNone: 'Aucune restriction alimentaire.',
     dietNote: (t) => `J'ai ajouté une note pour la cuisine : « ${t} ».`,
     name: (n) => `Réservation au nom de ${n}.`,
@@ -203,6 +215,19 @@ const GordonLang = (() => {
     r(/\bv[ée]g[ée]tarien(ne)?s?\b/, ' vegetarian '); r(/\b(fruits de mer|crustac[ée]s|crevettes|homard|crabe)\b/, ' shellfish ');
     r(/\ballergiques?\b/g, ' allergic '); r(/\ballergies?\b/g, ' allergy '); r(/\bintol[ée]ran(t|te|ce)s?\b/g, ' intolerant ');
     r(/(?:^|\s)(oe|œ)ufs?(?=\s)/g, ' eggs '); r(/\bsoja\b/g, ' soy '); r(/\bs[ée]same\b/g, ' sesame '); r(/\bpoissons?\b/g, ' fish ');
+    r(/\bpour une? (?!personne|seule?\b|adulte|\d)(?=[a-zàâçéèêëîïôûù])/g, ' for the ');
+    r(/\bveille de no[eë]l\b/g, ' christmas eve '); r(/\bno[eë]l\b/g, ' christmas '); r(/\b(jour de l'an|nouvel an)\b/g, " new year's day ");
+    r(/\bsaint-?valentin\b/g, " valentine's day "); r(/\bf[eê]te des m[eè]res\b/g, " mother's day "); r(/\bf[eê]te des p[eè]res\b/g, " father's day ");
+    r(/\bbapt[eê]me\b/g, ' christening '); r(/\br[ée]union de famille\b/g, ' family reunion '); r(/\b(fun[ée]railles|comm[ée]moration)\b/g, ' memorial ');
+    r(/\b(additions? s[ée]par[ée]es|factures s[ée]par[ée]es|payer s[ée]par[ée]ment)\b/g, ' separate bills '); r(/\b(press[ée]e?s?|on a peu de temps)\b/g, ' in a hurry ');
+    r(/\b(malentendante?|sourde?)\b/g, ' hard of hearing '); r(/\b(aveugle|malvoyante?)\b/g, ' blind '); r(/\ballait(er|ement)\b/g, ' breastfeed ');
+    r(/\bsi[eè]ge d'auto\b/g, ' car seat '); r(/\bsans sel\b/g, ' no salt '); r(/\bsans sucre\b/g, ' sugar-free '); r(/\bsans alcool\b/g, ' no alcohol ');
+    r(/\bpas [ée]pic[ée]e?\b/g, ' not spicy '); r(/\bchampignons?\b/g, ' mushrooms '); r(/\boignons?\b/g, ' onion '); r(/\bail\b/g, ' garlic ');
+    r(/\b(couples?)\b/g, ' couples ');
+    r(/\banniversaire de mariage\b/g, ' anniversary '); r(/\banniversaire\b/g, ' birthday '); r(/\bf[eê]te\b/g, ' celebration ');
+    r(/\bg[aâ]teau\b/g, ' cake '); r(/\bbougies?\b/g, ' candle '); r(/\b(pr[eè]s de la |[àa] la )?fen[eê]tre\b/g, ' by the window ');
+    r(/\b(au calme|tranquille|calme)\b/g, ' somewhere quiet '); r(/\brehausseur\b/g, ' booster '); r(/\bfian[cç]ailles\b/g, ' engagement ');
+    r(/\bremise de dipl[oô]me\b/g, ' graduation '); r(/\bretraite\b/g, ' retirement '); r(/\brepas d'affaires\b/g, ' business meeting ');
     r(/\benceinte\b/, ' pregnant '); r(/\b(casher|kasher|cach[eè]re)\b/, ' kosher '); r(/\bpas de porc\b/, ' no pork '); r(/\bdiab[ée]tique\b/, ' diabetic ');
     // times: 11 h 30, 11h, midi, vers
     r(/\b(\d{1,2})\s*h\s*(\d{2})\b/g, ' $1:$2 '); r(/\b(\d{1,2})\s*h\b/g, ' $1:00 ');
@@ -227,6 +252,7 @@ const GordonLang = (() => {
     r(/\bune douzaine\b/, ' a dozen ');
     r(/\b(personnes?|gens|convives|adultes)\b/g, ' people ');
     r(/\bpour\b/g, ' for '); r(/\bet\b/g, ' and ');
+    r(/\bmon (?=[a-zàâçéèêëîïôûù])/g, ' my '); // "mon père", not Monday
     for (const [fr, en] of Object.entries(NUM_FR)) t = t.replace(new RegExp(`\\b${fr}\\b(?!-)`, 'g'), en);
     return t.replace(/\s+/g, ' ').trim();
   }
