@@ -130,7 +130,7 @@ The plain site already shows status and errors step by step. Gordon's panel now 
 
 ## What Gordon understands (built-in parser, js/gordon-parser.js)
 
-Tested with about 200 phrases in English and French (R-15 to R-18). A few examples per detail:
+Tested with about 270 phrases in English and French (R-15 to R-18), including edge cases. A few examples per detail:
 - **Party size:** "4 people", "table for two", "there are 4 of us", "we're five", "family of 4", "2 adults and 2 kids", "me and my husband and our 2 kids", "me plus 3", "just me", "a dozen", "4 total". Changes: "actually make it 3", "one more person", "two more people", "one less".
 - **Correcting yourself:** "four wait no five", "Sunday, sorry, Saturday", "at 10, I mean 11", "4 no 5", "scratch that". What comes after the correction wins.
 - **Date:** "tomorrow", "this Sunday", "next Saturday", "this weekend", "next weekend", "Sunday next week", "in 3 days", "a week from today", "Dec 13", "December thirteenth", "the 22nd", "12/13". When a day is full, "sure" takes the next free day he offers.
@@ -138,5 +138,7 @@ Tested with about 200 phrases in English and French (R-15 to R-18). A few exampl
 - **Location:** Oshawa, Toronto, "downtown".
 - **Seating:** "high-top", "at the bar", "low table", "wheelchair", "stroller", "high chair", "no high tops", "no preference", "whatever is free".
 - **Dietary:** nuts, gluten, dairy, vegetarian or vegan, shellfish, plus notes for egg, soy, sesame, fish, halal, kosher, no pork, pregnant, diabetic. "No allergies", "we eat anything".
+- **Occasions and requests** go in "Anything else?": birthday, anniversary, engagement, graduation, celebration, high chair, booster seat, stroller, wheelchair, quiet table, window table, bringing a cake, surprise. Diet needs beyond the five chips (egg, halal and so on) get a chip of their own.
+- **Edge cases:** holidays ("Christmas Eve", "Mother's Day", "Boxing Day"), "first Sunday of December", "the Sunday after next", "22/11", "at 1030", "noonish", "4 of us plus a baby", "3 adults and twins", "two couples", "four, maybe five" (books for 5), "my wife's 40th" (a birthday, not a date), "allergic to kiwi" (any allergy gets noted), separate bills, hard of hearing, low vision, car seat, "double five" in phone numbers, "everything looks good".
 - **Name and phone:** "my name is", "call me", "put it under", "905 555 0100", "(905) 555-0100", spoken digits ("nine oh five...").
 - **Confirming:** "yes", "looks good", "sounds great", "go for it", "absolutely". A "yes" that also changes something ("sure, make it 4") reads the summary back again instead of booking. "Not quite", "hold on" or "change the time" let the guest change one item.

@@ -58,7 +58,7 @@
       let b = await loadBooking();
       if (!b || !LOCATIONS[b.location]) b = sample;
       const conf = String(Math.floor(100000 + Math.random() * 900000));
-      const date = new Date(b.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+      const date = new Date(b.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
       document.getElementById('heading').textContent = b.firstName ? `Reservation confirmed, ${b.firstName}.` : 'Reservation confirmed.';
       document.getElementById('conf-line').textContent = `Confirmation #${conf}. We've texted it to the number ending in ${b.phoneLast4}.`;
       document.getElementById('directions').textContent = `Get directions to ${LOCATIONS[b.location].address}`;

@@ -89,7 +89,7 @@
   prog.className = 'gordon-progress';
   prog.innerHTML = '<p class="gordon-progress-title" id="gordon-progress-title"></p><ul id="gordon-progress-list" aria-labelledby="gordon-progress-title"></ul>';
   statusEl().after(prog);
-  const short = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString(fr() ? 'fr-CA' : 'en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+  const short = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString(fr() ? 'fr-CA' : 'en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
   function renderProgress() {
     const s = B.state, u = T();
     const time = s.time || ''; // only once the time is checked and free, not just picked

@@ -45,7 +45,7 @@
     if (!check()) { form.querySelector('[aria-invalid="true"]').focus(); return; }
     const loc = form.querySelector('input[name="ev-loc"]:checked').value;
     const first = $('ev-name').value.trim().split(/\s+/)[0];
-    const date = new Date($('ev-date').value + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+    const date = new Date($('ev-date').value + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
     $('ev-done-title').textContent = `Thanks, ${first}. Your request is sent.`;
     $('ev-done-line').textContent = `Party of ${$('ev-guests').value} at ${loc} on ${date}. Our events team will email you within 1 business day. Questions? Call ${LOCATIONS[loc].phone}.`;
     form.hidden = true;
