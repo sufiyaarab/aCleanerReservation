@@ -159,8 +159,9 @@ const GordonLang = (() => {
   };
 
   // ---------- French replies -> words the parser knows ----------
-  const NUM_FR = { un: 'one', une: 'one', deux: 'two', trois: 'three', quatre: 'four', cinq: 'five', six: 'six', sept: 'seven',
-    huit: 'eight', neuf: 'nine', dix: 'ten', onze: 'eleven', douze: 'twelve', quinze: 'fifteen', vingt: 'twenty' };
+  const NUM_FR = { 'dix-sept': 'seventeen', 'dix-huit': 'eighteen', 'dix-neuf': 'nineteen', un: 'one', une: 'one', deux: 'two', trois: 'three', quatre: 'four', cinq: 'five', six: 'six', sept: 'seven',
+    huit: 'eight', neuf: 'nine', dix: 'ten', onze: 'eleven', douze: 'twelve', treize: 'thirteen', quatorze: 'fourteen', quinze: 'fifteen',
+    seize: 'sixteen', vingt: 'twenty' };
   const DAYS_FR = { dimanche: 'sunday', lundi: 'monday', mardi: 'tuesday', mercredi: 'wednesday', jeudi: 'thursday', vendredi: 'friday', samedi: 'saturday' };
   const MONTHS_FR = { janvier: 'january', 'f[ée]vrier': 'february', mars: 'march', avril: 'april', mai: 'may', juin: 'june', juillet: 'july',
     'ao[uû]t': 'august', septembre: 'september', octobre: 'october', novembre: 'november', 'd[ée]cembre': 'december' };
@@ -168,16 +169,29 @@ const GordonLang = (() => {
   function toEnglish(raw) {
     let t = ' ' + raw.toLowerCase().replace(/[’]/g, "'").replace(/[,;!?«»]|\.(?=\s|$)/g, ' ') + ' ';
     const r = (re, to) => { t = t.replace(re, to); };
+    r(/^\s*(oui|ouais|ouep|d'accord|dac|bien s[uû]r|parfait|ok|c'est [cç]a|c'est bon|c'est tout bon|c'est parfait|c'est correct|[cç]a marche|[cç]a me va|tr[eè]s bien|super|g[ée]nial|exact|exactement|absolument|tout [àa] fait|volontiers|r[ée]servez|confirmez|je confirme|allez-y|vas-y)\b/, ' yes ');
     // names first, so they keep their accents
     r(/\b(?:je m'appelle|mon nom est|c'est au nom de|au nom de)\s+/, ' my name is ');
     r(/^\s*(?:c'est|moi c'est)\s+/, " it's ");
+    // correcting yourself mid-sentence ("quatre, non attendez, cinq")
+    r(/(?:^|\s)(non,? attendez|non,? attends|attendez,? non|attends,? non|non,? pardon|pardon|je veux dire|je voulais dire|non,? plut[oô]t|plut[oô]t non|oups|euh non)(?=\s)/g, ' wait no ');
     // leaving Gordon / changing something
     r(/\b(utiliser le formulaire|je vais le faire moi-m[eê]me|laisse[rz]? tomber|annuler|fermer|arr[eê]te[rz]?)\b/, ' use the form ');
     r(/\b(changer|modifier|corriger|erreur)\b/, ' change ');
+    // relative party changes and picking an offered time
+    r(/\b(une? (?:personne |invit[ée]e? )?de plus|une? autre personne|ajoutez une personne|ajoute une personne)\b/, ' one more person ');
+    r(/\b(\S+) (?:personnes )?de plus\b/, ' $1 more people ');
+    r(/\b(une? (?:personne )?de moins|enlevez une personne|une personne en moins)\b/, ' one less ');
+    r(/\b(le premier|la premi[eè]re|la plus t[oô]t|l'heure plus t[oô]t)\b/, ' the earlier one ');
+    r(/\b(le deuxi[eè]me|la deuxi[eè]me|le second|la seconde|la plus tard|l'heure plus tard|la derni[eè]re)\b/, ' the later one ');
+    r(/\b(le plus t[oô]t possible|d[eè]s l'ouverture|[àa] l'ouverture)(?=\s)/, ' as early as possible ');
+    r(/\b(le plus tard possible)\b/, ' as late as possible ');
     // yes / no / none
-    r(/^\s*(oui|ouais|d'accord|bien s[uû]r|parfait|ok|c'est [cç]a|exact|r[ée]servez|confirmez|allez-y)\b/, ' yes ');
-    r(/^\s*(non|nan|pas vraiment)\b/, ' no ');
-    r(/\b(aucune?|rien|pas d'allergies?|pas de restrictions?|aucune restriction)\b/, ' none ');
+    r(/^\s*(non|nan|pas vraiment|pas tout [àa] fait|pas encore|attendez|attends|un instant|une seconde)\b/, ' no ');
+    r(/\b(aucune?|rien|pas d'allergies?|pas de restrictions?|aucune restriction|on mange de tout|nous mangeons de tout|personne n'a|personne ne)\b/, ' none ');
+    // children and adults ("deux adultes et deux enfants")
+    r(/\bchaise haute\b/, ' high chair '); r(/\bposs?ette\b/, ' stroller ');
+    r(/\b(enfants?|petits|ados|adolescents?)\b/g, ' kids '); r(/(?:^|\s)b[ée]b[ée]s?(?=\s)/g, ' baby '); r(/\badultes\b/g, ' adults ');
     // seating
     r(/\b(tables? hautes?|tabourets?|au comptoir|au bar)\b/, ' high-top ');
     r(/\b(tables? basses?|table normale|table r[ée]guli[eè]re|fauteuil roulant|accessible)\b/, ' low table ');
@@ -187,11 +201,17 @@ const GordonLang = (() => {
     r(/\b(noix|arachides?|cacahu[eè]tes?)\b/, ' nuts '); r(/\bc(oe|œ)liaque\b/, ' celiac ');
     r(/\b(produits laitiers|lactose|lait)\b/, ' dairy '); r(/\bv[ée]g[ée]talien(ne)?\b/, ' vegan ');
     r(/\bv[ée]g[ée]tarien(ne)?s?\b/, ' vegetarian '); r(/\b(fruits de mer|crustac[ée]s|crevettes|homard|crabe)\b/, ' shellfish ');
+    r(/\ballergiques?\b/g, ' allergic '); r(/\ballergies?\b/g, ' allergy '); r(/\bintol[ée]ran(t|te|ce)s?\b/g, ' intolerant ');
+    r(/(?:^|\s)(oe|œ)ufs?(?=\s)/g, ' eggs '); r(/\bsoja\b/g, ' soy '); r(/\bs[ée]same\b/g, ' sesame '); r(/\bpoissons?\b/g, ' fish ');
+    r(/\benceinte\b/, ' pregnant '); r(/\b(casher|kasher|cach[eè]re)\b/, ' kosher '); r(/\bpas de porc\b/, ' no pork '); r(/\bdiab[ée]tique\b/, ' diabetic ');
     // times: 11 h 30, 11h, midi, vers
     r(/\b(\d{1,2})\s*h\s*(\d{2})\b/g, ' $1:$2 '); r(/\b(\d{1,2})\s*h\b/g, ' $1:00 ');
     r(/\bmidi\b/, ' noon '); r(/\bvers\b/g, ' around '); r(/(^|\s)[àa](?=\s)/g, ' at ');
     r(/\bet demie\b/, ':30');
     // dates
+    r(/\b(ce week-?end|cette fin de semaine)\b/, ' this weekend '); r(/\b(le week-?end prochain|la fin de semaine prochaine)\b/, ' next weekend ');
+    r(/\bdans (\S+) jours?\b/, ' in $1 days '); r(/\bdans une semaine\b/, ' in a week ');
+    r(/\bla semaine prochaine\b/, ' next week ');
     r(/\baujourd'hui\b/, ' today '); r(/\bapr[eè]s-demain\b/, ' day after tomorrow '); r(/\bdemain\b/, ' tomorrow ');
     for (const [fr, en] of Object.entries(DAYS_FR)) t = t.replace(new RegExp(`\\b${fr}( prochain)?\\b`, 'g'), ` ${en} `);
     for (const [fr, en] of Object.entries(MONTHS_FR)) t = t.replace(new RegExp(`\\b${fr}\\b`, 'g'), ` ${en} `);
@@ -201,9 +221,12 @@ const GordonLang = (() => {
     r(/\bmoi et (ma femme|mon mari|mon ami|mon amie|ma copine|mon copain|mon partenaire|ma partenaire|ma m[eè]re|mon p[eè]re|ma s(oe|œ)ur|mon fr[eè]re)\b/, ' me and my friend ');
     r(/\bmoi et (\S+) (ami|amie|amis|amies|personnes|autres|coll[eè]gues|enfants)\b/, ' me and $1 friends ');
     r(/\b(en fait|plut[oô]t|finalement|mettez|mets)\b/g, ' actually ');
-    r(/\b(nous sommes|on est|on sera|nous serons)\s+(\S+)/, ' $2 people ');
+    r(/\b(nous sommes|on est|on sera|nous serons|on va [eê]tre|il y aura)\s+(?!kids|adults|baby)(\S+)(?!\s+(?:adults|kids|baby))/, ' $2 people ');
+    r(/\b(\S+) au total\b/, ' $1 in total ');
+    r(/\b(nos|mes)\b(?=\s+\S+\s+kids)/g, ' our ');
+    r(/\bune douzaine\b/, ' a dozen ');
     r(/\b(personnes?|gens|convives|adultes)\b/g, ' people ');
-    r(/\bpour\b/g, ' for ');
+    r(/\bpour\b/g, ' for '); r(/\bet\b/g, ' and ');
     for (const [fr, en] of Object.entries(NUM_FR)) t = t.replace(new RegExp(`\\b${fr}\\b(?!-)`, 'g'), en);
     return t.replace(/\s+/g, ' ').trim();
   }
