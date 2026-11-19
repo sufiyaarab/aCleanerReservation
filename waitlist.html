@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Waitlist · Craves &amp; Crumble</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- W01 Waitlist (R-4, R-5) -->
+  <nav class="nav">
+    <a class="logo" href="index.html"><img src="images/logo.png" alt="Craves &amp; Crumble"></a>
+    <div class="links">
+      <a href="menu.html">Menu</a>
+      <a href="hours.html">Hours &amp; locations</a>
+      <a href="events.html">Private events</a>
+    </div>
+    <a class="btn btn-primary" href="index.html">Reserve</a>
+  </nav>
+
+  <main class="waitlist" data-no-translate>
+    <img src="images/photo-1-dining-room.png" alt="" class="waitlist-photo" id="wl-photo">
+    <div>
+      <h1 id="wl-title"></h1>
+      <p id="wl-intro"></p>
+      <p class="help" id="wl-demo" hidden></p>
+
+      <fieldset class="wl-locs">
+        <legend id="wl-loc-legend"></legend>
+        <label class="chip"><input type="radio" name="wl-loc" value="Oshawa"> Oshawa</label>
+        <label class="chip"><input type="radio" name="wl-loc" value="Toronto"> Toronto</label>
+      </fieldset>
+
+      <!-- R-5: wait information, visible before any details -->
+      <section class="wl-card" id="wl-card" aria-labelledby="wl-now">
+        <p class="wl-now" id="wl-now"></p>
+        <p class="wl-big" id="wl-big" aria-live="polite"></p>
+        <p class="help" id="wl-updated"></p>
+      </section>
+      <p><button type="button" class="btn btn-primary" id="wl-join"></button></p>
+      <p class="help" id="wl-why"></p>
+
+      <!-- R-4: name, party size, phone -->
+      <form id="wl-form" hidden novalidate autocomplete="on">
+        <h2 id="wl-form-title"></h2>
+        <label class="field" id="wl-name-field"><span id="wl-name-label"></span><input id="wl-name" autocomplete="name" required>
+          <span class="help error-msg" id="wl-name-error" hidden></span></label>
+        <label class="field"><span id="wl-party-label"></span><select id="wl-party"></select></label>
+        <label class="field" id="wl-phone-field"><span id="wl-phone-label"></span><input id="wl-phone" type="tel" autocomplete="tel" placeholder="905-555-0100" required>
+          <span class="help error-msg" id="wl-phone-error" hidden></span></label>
+        <p class="help" id="wl-big-group"></p>
+        <button class="btn btn-primary" id="wl-submit"></button>
+        <button type="button" class="link-btn" id="wl-cancel"></button>
+      </form>
+
+      <!-- On the list -->
+      <section id="wl-done" hidden aria-live="polite">
+        <h2 id="wl-done-title"></h2>
+        <p class="wl-big" id="wl-place"></p>
+        <p id="wl-text"></p>
+        <p class="help" id="wl-done-updated"></p>
+        <button type="button" class="btn" id="wl-leave"></button>
+      </section>
+
+      <hr>
+      <p class="help" id="wl-foot"></p>
+    </div>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/waitlist.js"></script>
+  <script src="js/waitlist-page.js"></script>
+</body>
+</html>

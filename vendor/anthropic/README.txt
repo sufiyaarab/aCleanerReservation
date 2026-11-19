@@ -1,0 +1,1 @@
+Bundled from @anthropic-ai/sdk 1.10.0 with esbuild (--format=iife --global-name=AnthropicSDK --platform=browser) so it loads as a plain script, even from file://. Exposes window.AnthropicSDK.Anthropic.

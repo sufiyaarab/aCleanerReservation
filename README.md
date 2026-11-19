@@ -44,7 +44,7 @@ Click the floating bubble in the bottom-right corner to interact with **Gordon**
 
 * **Text Parsing (`js/gordon-parser.js` & `js/gordon.js`):** Gordon processes typed inputs natively without an external AI or server backend, validating inputs against standard form rules. 
   * *Try typing:* `"4 people this Sunday at 11"`, `"actually make it 3"`, `"10 people"`, `"at 3pm"`, `"high-top"`, `"nut allergy"`, or a phone number followed by `"yes"`.
-* **3D Avatar (`models/gordon.glb`):** Rendered using **Three.js** (stored locally in `vendor/` with no external CDN dependency). Requires a local web server to load the 3D model; otherwise gracefully defaults to dual static images. Model derived from Valve’s *Deadlock* "Priest" model via `gordon-avatar/scripts/web-export.py`.
+* **3D Avatar (`js/gordon-waffle.js`):** an original round waffle character built from **Three.js** shapes (stored locally in `vendor/`, no model file, no CDN). He blinks, follows the pointer, moves his mouth while talking and changes face with the chat. Requires a local web server; opened from `file://` he uses two still images instead. The old Priest-based model (`models/gordon.glb`, `images/old-priest/`) is kept but no longer used.
 * **Voice Interaction:** Click **Talk** to use speech recognition. Your speech appears live in captions, and Gordon responds aloud (toggle sound via the top navigation bar). 
   * **Privacy:** Uses on-device speech recognition where supported (modern Chrome/Edge via built-in English speech packs), ensuring no audio data leaves your machine. Fallback relies on native browser online speech recognition. Text input instantly reverts control back to the keyboard.
 
@@ -66,3 +66,62 @@ Click the floating bubble in the bottom-right corner to interact with **Gordon**
 * **Guide Me:** Breaks page workflows into concise step-by-step overlays (3 steps on Home, 5 on Booking, 5 on Confirmation) featuring **Previous**, **Next**, **Repeat**, and **Exit** controls, complete with dashed visual bounding boxes around target elements.
 * **Voice Commands:** Control the app hands-free using natural phrases like `"Open help"`, `"Read page"`, `"Guide me"`, `"Next"`, `"Back"`, `"Repeat"`, `"Exit"`, or `"Stop reading"` (fully supported in both English and French). 
 * **Accessibility Polish:** Full keyboard focus trapping, `Esc` key modal dismissals, and dynamic mobile viewports ensuring screens scroll cleanly above active helper panels.
+
+---
+
+## Gordon's voice (free AI, British)
+
+js/gordon-voice.js gives Gordon one voice for his booking panel and his help tools. In English he uses Kokoro-82M, a free, open text-to-speech model (Apache-2.0), with its British male voice `bm_george` at normal speed. It runs on the guest's own computer in a Web Worker (js/gordon-voice-worker.js) through kokoro-js, which is self-hosted in vendor/kokoro. No API key, no account, and the words he says never leave the browser.
+
+- Quality: with WebGPU (recent Chrome or Edge on most laptops and desktops) he loads the full-precision model (fp32, about 310 MB the first time), which sounds smoothest. Without WebGPU he uses the smaller q8 model (about 90 MB). The browser console says which one loaded ("Gordon AI voice ready: ...").
+- The model only downloads the first time he speaks, from Hugging Face, and the ONNX Runtime files load from cdn.jsdelivr.net. The browser caches both, so later visits start in a few seconds. He says when the voice is loading and when it's ready.
+- While it loads he waits up to 20 seconds rather than switching voices (his words are already on screen). He joins sentences into longer pieces so there are fewer gaps, and fades each piece in and out so it doesn't click.
+- Backup: when the AI voice can't play he uses a voice built into the computer (a British male one when there is one) and says why once: opened straight from the file (workers need a local server such as VS Code Live Server or GitHub Pages), no internet on the first load, or still downloading. If he sounds robotic, that message tells you it's the backup voice.
+- French always uses a built-in French voice, since Kokoro has no French Canadian voice.
+- Speed: the model starts loading as soon as the guest opens Gordon's panel. The first sentence of each line is made on its own so he starts quickly, and the next part is made while he speaks (Read page also prepares the next block ahead). On a computer without WebGPU each line still takes a moment to make.
+- Whose turn it is: a bar under his picture says "Gordon is talking", "Listening. Your turn, speak now." (red, with a pulsing dot) or "Gordon is thinking". A short rising beep means the mic just opened, a falling beep means it closed. The mic is off while he talks, so he never hears himself; press Stop to cut in.
+- Home and confirmation pages understand everyday wording with Voice commands on ("I want to book a table for Sunday", "can you read this", "how do I do this"), show "You said: ..." and say which phrases work if he didn't get it. "Book a table" (or Next on the last step of the home guide) takes the guest to booking with Gordon open and the Talk button highlighted: one press and he's listening. Browsers don't let a new page start the mic or sound on its own.
+- To try another voice, change `VOICE` at the top of js/gordon-voice.js (bm_fable, bm_lewis, bm_daniel). `SPEED` sets his pace.
+- The sass is in his wording (js/gordon-lang.js and js/assist.js). The model can't act out emotions, so it reads every line in the same friendly tone.
+
+---
+
+## Guest data privacy
+
+Nothing is stored while the guest fills in the form. When they confirm, js/common.js (saveBooking) keeps only what the confirmation page shows: the first name, the last 4 digits of the phone and how many dietary needs were noted. The full name, full number, email, dietary/health needs and notes are never stored. That small record is encrypted with AES-GCM (Web Crypto API) using a fresh, non-extractable key kept in IndexedDB, and the encrypted copy sits in sessionStorage, which is wiped when the tab closes. Limit: encryption in the browser can't stop a script running on the same site, because it can use the same key. So the real protection is storing as little as possible and adding no third-party scripts. The warning comment in common.js explains this.
+
+---
+
+## Optional: Gordon with Claude (local demo only)
+
+By default Gordon understands guests with the built-in parser (js/gordon-parser.js). For a demo on your own computer he can use Claude instead, which copes with casual wording ("me, my partner and our 2 kids this Sunday around 10ish") and answers questions about the restaurant.
+
+Setup:
+1. Copy `js/config.example.js` to `js/config.local.js`.
+2. Put your Anthropic API key in `config.local.js` (and only there). Set a low monthly spend limit for that key in the Anthropic Console.
+3. Open booking.html and talk to Gordon. "Gordon is thinking…" shows while he waits for Claude.
+
+How it works (js/gordon-ai.js): each guest message goes to Claude (model `claude-opus-5-5` by default, low effort; `claude-haiku-5-5` is faster and cheaper, set it in the config) with the restaurant's facts and a strict JSON format. Claude only reads details and answers questions. Every value it returns is checked against fixed lists and formats, then Gordon runs the same rules as the plain form (party limit, Mondays, brunch hours, availability) before filling anything in. If there's no key, the call fails three times, times out (12 s) or is declined, he uses the built-in parser. The SDK is self-hosted in vendor/anthropic (bundled from @anthropic-ai/sdk 1.10.0) and is only loaded when a key is set.
+
+Safety: `.gitignore` keeps `js/config.local.js` out of GitHub. Never commit it, upload it to Netlify or put the key in another file, because anyone with the site files can read it. A browser console 404 for config.local.js just means no key is set. Privacy: with a key, what guests type or say to Gordon is sent to Anthropic, so mention this in the report.
+
+---
+
+## Usability heuristics in Gordon's panel (js/gordon-ux.js)
+
+The plain site already shows status and errors step by step. Gordon's panel now makes the same things clear for the assistant:
+- **Visibility of system status:** an always-on status line under his picture: "Your turn", Listening, Thinking, Talking, or Loading his voice (with %). "Loading Gordon…" shows over his picture until the 3D view appears.
+- **Recognition rather than recall:** "Your booking so far" chips (place, people, day, time, seat, diet, name and phone). Solid chips are filled, dashed ones are still to come. Time only counts once it has been checked and is free.
+- **User control and freedom:** fields Gordon fills get a "Filled by Gordon" tag until the guest edits them.
+- **Gestalt:** proximity (picture, status and booking-so-far form one card, quick replies sit on the text box), similarity (all Gordon lines are tan bubbles on the left, all guest lines are outlined bubbles on the right), common region (help tools in their own labelled box).
+
+---
+
+## Waitlist and live wait (Could: R-4, R-5, R-9)
+
+- **R-4 Join waitlist:** js/waitlist.js adds a plain "Join waitlist" link beside Reserve on every page (Reserve stays the main button). On the booking page, when today has no table at the chosen time, it also shows "Arriving soon? Join today's waitlist instead."
+- **R-5 Wait first:** waitlist.html (js/waitlist-page.js) shows parties waiting and the estimated minutes for the chosen location before asking for anything, with one Join button. Then name, party size (1 to 8) and mobile number. The guest's place in line moves up by itself every 20 seconds. Closed days and hours get their own message (Mondays, before 8:30 am, after 1:30 pm).
+- **R-9 Live wait:** confirmed.html (js/livewait.js) shows "Your table is on time" or the expected wait from 15 minutes before the booking until the 15-minute hold ends, updating every 20 seconds without reloading.
+- The numbers are simulated in the browser like availability (no backend). Nothing about a waitlist guest is stored, only the first name and last 4 digits are kept in memory until the page closes.
+- **Presenting outside 9 am to 1:30 pm:** add `?demo=1` to waitlist.html or confirmed.html. The waitlist clock moves to opening hours and the live wait starts 10 minutes before the booking. The confirmation page also has a "Presenting? Preview the live wait" link.
+- English and French, and a phone layout, like the rest of the site.

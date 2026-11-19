@@ -24,6 +24,14 @@
       <h1 id="heading">Reservation confirmed</h1>
       <p id="conf-line"></p>
       <dl class="review-list" id="details"></dl>
+      <!-- R-9 live wait, from 15 minutes before the booking -->
+      <section class="live-wait" id="live-wait" data-no-translate aria-labelledby="lw-title">
+        <h2 id="lw-title">Live wait</h2>
+        <p class="lw-text" id="lw-text" role="status" aria-live="polite"></p>
+        <p class="help" id="lw-updated"></p>
+        <p class="help" id="lw-demo" hidden></p>
+        <p class="help"><a href="?demo=1" id="lw-preview"></a></p>
+      </section>
       <hr>
       <button type="button" class="btn" id="add-cal">Add to calendar</button>
       <button type="button" class="btn" id="directions">Get directions</button>
@@ -34,6 +42,9 @@
 
   <script src="js/common.js"></script>
   <script src="js/i18n.js"></script>
+  <script src="js/waitlist.js"></script>
+  <script src="js/livewait.js"></script>
+  <script src="js/gordon-voice.js"></script>
   <script src="js/assist.js"></script>
   <script>
     // The booking page only passes a minimized, encrypted record (see saveBooking in js/common.js):
